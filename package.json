@@ -1,6 +1,6 @@
 {
   "name": "drogue",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,9 @@
     "build": "tsc && vp build",
     "preview": "vp preview",
     "prepare": "vp config"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
   },
   "devDependencies": {
     "typescript": "~6.0.2",

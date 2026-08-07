@@ -1,0 +1,6 @@
+# DROGUE - TODO
+
+- [ ] fix(types): add default values for `interface Tile`
+- [ ] refactor(types): not sure if `export type GameMode = "menu" | "game" | "inventory" | "map" | "target" | "dead" | "win";` is the best structure. `menu` and `game` are the only two modes that are mutually exclusive, `inventory` and `map` are both some kind of `menu`. I think here `menu` probably should be `mainMenu`. And `inventory` and `map` should not be considered `GameMode` but rather related to `Menu` and/or `UIElement`
+- [ ] refactor(types): I don't think `stairsPos` and `orbPos` should be a direct access of `DungeonLevel`, because `DungeonLevel` already has a `tiles` property, and `stairsPos` and `orbPos` are just a specific type of tile. I think it would be better to have a method like `getTile(id: string): Tile | null` or something similar.
+- [ ] fix(dungeon): `const stairsPos = this.placeStairsOrOrb()` is so awkward. We should probably have a `placeStairs()` and `placeOrb()` method, and then call them separately. Also, `placeItems()` and `placeEntities()` return `items`/`entities` while `placeStairsOrOrb()` returns a `Vector2`. This is inconsistent and confusing. I think `placeStairs()` and `placeOrb()` should return the `Tile` that was placed, and then we can get the position from that tile.

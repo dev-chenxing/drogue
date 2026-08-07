@@ -4,10 +4,33 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>drogue</title>
+    <title>DROGUE - Old School Dungeon Crawl</title>
+    <style>
+      @font-face {
+        font-family: "FT88 Gothique";
+        src:
+          url("/fonts/FT88-Gothique.woff2") format("woff2"),
+          url("/fonts/FT88-Gothique.woff") format("woff");
+        font-synthesis: none;
+      }
+      * {
+        -webkit-font-smoothing: none;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: geometricPrecision;
+      }
+      body {
+        margin: 0;
+        background: #000000;
+        min-height: 100dvh;
+      }
+      #game-container {
+        image-rendering: pixelated;
+        font-family: "FT88 Gothique", monospace;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="game-container"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
