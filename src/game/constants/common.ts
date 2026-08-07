@@ -22,26 +22,31 @@ export const COLORS = {
 
 export const TILES: { [key: string]: Tile } = {
   FLOOR: {
+    id: "floor",
     character: ".",
     color: COLORS.LIGHT_GRAY,
     walkable: true,
   },
   WALL: {
+    id: "wall",
     character: "#",
     color: COLORS.DARK_GRAY,
     walkable: false,
   },
   DOOR: {
+    id: "door",
     character: "+",
     color: COLORS.BROWN,
     walkable: false,
   },
   STAIRS: {
+    id: "stairs",
     character: ">",
     color: COLORS.LIGHT_GRAY,
     walkable: true,
   },
   ORB: {
+    id: "orb",
     character: "0",
     color: COLORS.LIGHT_GRAY,
     walkable: true,

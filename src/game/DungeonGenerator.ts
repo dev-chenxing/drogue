@@ -1,6 +1,19 @@
-import type { Tile, Vector2, DungeonLevel, Entity, ItemStack } from "./types";
 import { TILES, DUNGEON, DIRECTIONS } from "./constants/common";
 import { ITEM_DATA } from "./constants/ItemData";
+import { ENTITY_DATA } from "./constants/EntityData";
+import { createMobile } from "./EntityFactory";
+import { getItem } from "./ItemFactory";
+import type {
+  Armor,
+  DungeonLevel,
+  EntityData,
+  Item,
+  ItemStack,
+  Mobile,
+  Tile,
+  Vector2,
+  Weapon,
+} from "./types";
 
 interface Room {
   x1: number; // x coordinate of the top-left corner of the room
@@ -31,7 +44,7 @@ export class DungeonGenerator {
 
   public generate(): {
     level: DungeonLevel;
-    entities: Entity[];
+    entities: Mobile[];
     items: ItemStack[];
     playerStart: Vector2;
   } {
@@ -211,16 +224,14 @@ export class DungeonGenerator {
     return stairsPos;
   }
 
-  private getItem(itemId: string): (typeof ITEM_DATA)[number] {
-    const item = ITEM_DATA.find((item) => item.name === itemId);
-    if (!item) {
-      throw new Error(`Item with id ${itemId} not found`);
-    }
-    return item;
-  }
-
-  private createItem(itemId: string, x: number, y: number, count: number, id: number): ItemStack {
-    const item = this.getItem(itemId);
+  private createItemStack(
+    itemId: string,
+    x: number,
+    y: number,
+    count: number,
+    id: number,
+  ): ItemStack<Item & Partial<Weapon> & Partial<Armor>> {
+    const item = getItem(itemId);
     return {
       itemData: {
         count,
@@ -253,23 +264,56 @@ export class DungeonGenerator {
         if (Math.random() * 100 < DUNGEON.GOLD_RATE) {
           // Place gold
           const goldAmount = Math.floor(Math.random() * this.depth * 3) + 1; // Gold amount scales with depth
-          items.push(this.createItem("gold", ix, iy, goldAmount, itemIdCounter++));
+          items.push(this.createItemStack("gold", ix, iy, goldAmount, itemIdCounter++));
         } else {
           // Place a random item from ITEM_DATA
           const itemId = this.getRandomItem();
-          items.push(this.createItem(itemId, ix, iy, 1, itemIdCounter++));
+          items.push(this.createItemStack(itemId, ix, iy, 1, itemIdCounter++));
         }
       }
     }
     return items;
   }
 
-  private placeEntities(): Entity[] {
-    return [];
+  private getRandomItem(): string {
+    const candidates: string[] = [];
+    for (const item of ITEM_DATA) {
+      const [minFloor, maxFloor] = item.floors;
+      if (this.depth >= minFloor && this.depth <= maxFloor) {
+        candidates.push(item.name);
+      }
+    }
+    if (candidates.length === 0) {
+      throw new Error(`No items available for depth ${this.depth}`);
+    }
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    return candidates[randomIndex];
   }
 
-  private getRandomItem(): string {
-    const index = Math.floor(Math.random() * ITEM_DATA.length);
-    return ITEM_DATA[index].name;
+  private placeEntities(): Mobile[] {
+    const entities: Mobile[] = [];
+    let entityIdCounter = 0; // Counter to ensure unique entity IDs
+
+    for (const room of this.rooms) {
+      const entity = this.getRandomEntity();
+      for (let i = 0; i < entity.qty; i++) {
+        if (Math.random() * 100 < DUNGEON.ENEMY_RATE) {
+          const ex = Math.floor(Math.random() * (room.width - 2)) + room.x1 + 2;
+          const ey = Math.floor(Math.random() * (room.height - 2)) + room.y1 + 2;
+          entities.push(createMobile(entity, { x: ex, y: ey }, entityIdCounter++, this.depth));
+        }
+      }
+    }
+    return entities;
+  }
+
+  private getRandomEntity(): EntityData {
+    return ENTITY_DATA[this.depth * 2 + Math.floor(Math.random() * 2)]; // Scale entity selection with depth
+  }
+
+  public isWalkable(x: number, y: number): boolean {
+    if (!this.isInBounds(x, y)) return false;
+    const tile = this.tiles[x][y];
+    return tile.walkable;
   }
 }

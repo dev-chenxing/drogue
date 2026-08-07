@@ -4,6 +4,7 @@ export interface Vector2 {
 }
 
 export interface Tile {
+  id: string;
   character: string;
   color: string;
   backgroundColor?: string;
@@ -30,23 +31,43 @@ export interface Stats {
   ac: number; // armor class
 }
 
-export interface Entity extends Stats {
-  position: Vector2;
-  id: string;
+export interface EntityData {
   name: string;
   tile: string;
   color: string;
   gold: number;
-  floor: number; // The floor the entity is currently on
-  qty: number; // ???
-  seen: boolean;
-  weapon: ItemStack | null;
-  armor: ItemStack | null;
+  qty: number; // the number of entities to spawn in the dungeon level
+  hp: number;
+  mp: number;
+  xp: number;
+  st: number; // strength
+  dx: number; // dexterity
+  int: number; // intelligence
+  ev: number; // evasion
+  ac: number; // armor class
 }
 
-export interface ItemStack {
+export interface Entity extends Stats {
+  name: string;
+  tile: string;
+  color: string;
+  gold: number;
+  qty: number; // the number of entities to spawn in the dungeon level
+}
+
+export interface Mobile extends Entity {
+  id: string;
+  position: Vector2;
+  floor: number; // The floor the entity is currently on
+  seen: boolean;
+  weapon: ItemStack<Weapon> | null;
+  armor: ItemStack<Armor> | null;
+  items: ItemStack<Item>[]; // The items the entity is carrying
+}
+
+export interface ItemStack<T extends Item = Item> {
   itemData: ItemData;
-  object: Item | Weapon | Armor;
+  object: T;
 }
 
 export interface ItemData {
