@@ -76,20 +76,42 @@ export interface ItemData {
   seen: boolean;
 }
 
+export type ItemType = "gold" | "weapon" | "armor" | "potion";
+
+// The static shape of an item definition in ITEM_DATA
+export interface ItemTemplate {
+  name: string;
+  tile: string;
+  color: string;
+  type: ItemType;
+  dmg: number;
+  ac: number;
+  ev: number;
+  zap: number;
+  floors: [number, number];
+}
+
 export interface Item {
   id: string;
   name: string;
   tile: string;
   color: string;
+  type: ItemType;
   floors: [number, number]; // The floors on which the item stack can be found
+  damage?: number; // Damage dealt (weapons)
+  zap?: number; // mp cost (weapons)
+  ac?: number; // Armor class provided (armor)
+  ev?: number; // Evasion provided (armor)
 }
 
 export interface Weapon extends Item {
+  type: "weapon";
   damage: number; // Damage dealt by the weapon
   zap: number; // mp cost
 }
 
 export interface Armor extends Item {
+  type: "armor";
   ac: number; // Armor class provided by the armor
   ev: number; // Evasion provided by the armor
 }

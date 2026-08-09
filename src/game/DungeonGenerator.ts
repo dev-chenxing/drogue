@@ -3,17 +3,7 @@ import { ITEM_DATA } from "./constants/ItemData";
 import { ENTITY_DATA } from "./constants/EntityData";
 import { createMobile } from "./EntityFactory";
 import { getItem } from "./ItemFactory";
-import type {
-  Armor,
-  DungeonLevel,
-  EntityData,
-  Item,
-  ItemStack,
-  Mobile,
-  Tile,
-  Vector2,
-  Weapon,
-} from "./types";
+import type { DungeonLevel, EntityData, ItemStack, Mobile, Tile, Vector2 } from "./types";
 
 interface Room {
   x1: number; // x coordinate of the top-left corner of the room
@@ -230,7 +220,7 @@ export class DungeonGenerator {
     y: number,
     count: number,
     id: number,
-  ): ItemStack<Item & Partial<Weapon> & Partial<Armor>> {
+  ): ItemStack {
     const item = getItem(itemId);
     return {
       itemData: {
@@ -243,6 +233,7 @@ export class DungeonGenerator {
         name: item.name,
         tile: item.tile,
         color: item.color,
+        type: item.type,
         damage: item.dmg,
         ac: item.ac,
         ev: item.ev,

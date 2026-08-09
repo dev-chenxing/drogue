@@ -74,3 +74,11 @@ export const DIRECTIONS = [
   { x: 0, y: -1 }, // north
   { x: 0, y: 1 }, // south
 ];
+
+export const LOCAL_STORAGE_KEY = "drogue_high_scores";
+
+export const UI = {
+  FONT_FAMILY: "FT88 Gothique",
+  FONT_SIZE: "16px",
+  LINE_HEIGHT: 16,
+};
