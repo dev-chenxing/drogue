@@ -1,5 +1,7 @@
 # DROGUE - TODO
 
+- [ ] fix(gamescene): constrict the game to 32x20 tiles. the messages menu is currently overflowing the tiles.
+- [ ] fix: player cannot move through opened doors.
 - [ ] refactor(dungeon): instead of `getRandomItem`, add `LeveledItem`/`LeveledEntity` types
 - [ ] refactor(types): not sure if `export type GameMode = "menu" | "game" | "inventory" | "map" | "target" | "dead" | "win";` is the best structure. `menu` and `game` are the only two modes that are mutually exclusive, `inventory` and `map` are both some kind of `menu`. I think here `menu` probably should be `mainMenu`. And `inventory` and `map` should not be considered `GameMode` but rather related to `Menu` and/or `UIElement`
 - [ ] refactor(types): I don't think `stairsPos` and `orbPos` should be a direct access of `DungeonLevel`, because `DungeonLevel` already has a `tiles` property, and `stairsPos` and `orbPos` are just a specific type of tile. I think it would be better to have a method like `getTile(id: string): Tile | null` or something similar.

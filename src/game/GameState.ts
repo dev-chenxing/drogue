@@ -500,7 +500,7 @@ export class GameState {
     this.showCursor = true;
   }
 
-  public moveCursor(direction: Vector2) {
+  public moveTargetCursor(direction: Vector2) {
     const targetPos = {
       x: this.cursorPosition.x + this.player.position.x - 7 + direction.x,
       y: this.cursorPosition.y + this.player.position.y - 7 + direction.y,
@@ -517,7 +517,7 @@ export class GameState {
 
   public fireWand() {
     if (!this.player.weapon || this.player.mp.current < this.player.weapon.object.zap) {
-      this.cancelTargeting();
+      this.exitTargetingMode();
       return;
     }
 
@@ -538,11 +538,11 @@ export class GameState {
         break;
       }
     }
-    this.cancelTargeting();
+    this.exitTargetingMode();
     this.endPlayerTurn();
   }
 
-  public cancelTargeting() {
+  public exitTargetingMode() {
     this.mode = "game";
     this.showCursor = false;
   }
