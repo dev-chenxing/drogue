@@ -1,5 +1,6 @@
 import * as Phaser from "phaser";
 import { COLORS, UI } from "../game/constants/common";
+import { drawText } from "../game/drawText";
 
 // Define menu options
 type MenuOption = {
@@ -16,6 +17,10 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    // Reset selected option and blink timer
+    this.selectedOption = 1;
+    this.blinkTimer = 0;
+
     this.cameras.main.setBackgroundColor(COLORS.BLACK);
 
     // Keyboard input
@@ -65,21 +70,6 @@ export class MenuScene extends Phaser.Scene {
     }
   }
 
-  private drawText(
-    x: number,
-    y: number,
-    text: string,
-    color: string = COLORS.LIGHT_GRAY,
-  ): Phaser.GameObjects.Text {
-    return this.add
-      .text(x, y, text, {
-        fontFamily: UI.FONT_FAMILY,
-        fontSize: UI.FONT_SIZE,
-        color: color,
-      })
-      .setOrigin(0.5);
-  }
-
   private drawMenu() {
     this.children.removeAll();
 
@@ -87,23 +77,23 @@ export class MenuScene extends Phaser.Scene {
     let y = UI.LINE_HEIGHT * 2; // Start a bit down from the top
 
     // Separator line
-    this.drawText(centerX, y, "################################");
+    drawText(this, centerX, y, "################################", COLORS.LIGHT_GRAY, true);
     y += UI.LINE_HEIGHT;
 
     // Title (ASCII art style)
-    this.drawText(centerX, y, "___ ___  __  __     ____");
+    drawText(this, centerX, y, "___ ___  __  __     ____", COLORS.LIGHT_GRAY, true);
     y += UI.LINE_HEIGHT;
-    this.drawText(centerX, y, "|  \\|__)/  \\/ _`|  ||__ ");
+    drawText(this, centerX, y, "|  \\|__)/  \\/ _`|  ||__ ", COLORS.LIGHT_GRAY, true);
     y += UI.LINE_HEIGHT;
-    this.drawText(centerX, y, "|__/|  \\\\__/\\__>\\__/|___");
+    drawText(this, centerX, y, "|__/|  \\\\__/\\__>\\__/|___", COLORS.LIGHT_GRAY, true);
     y += UI.LINE_HEIGHT * 2;
 
     // Subtitle
-    this.drawText(centerX, y, "old school dungeon crawl");
+    drawText(this, centerX, y, "old school dungeon crawl", COLORS.LIGHT_GRAY, true);
     y += UI.LINE_HEIGHT * 2;
 
     // Separator line
-    this.drawText(centerX, y, "################################");
+    drawText(this, centerX, y, "################################", COLORS.LIGHT_GRAY, true);
     y += UI.LINE_HEIGHT * 2;
 
     // Menu options
@@ -113,20 +103,22 @@ export class MenuScene extends Phaser.Scene {
       const optionIndex = i + 1;
       const isSelected = this.selectedOption === optionIndex;
       const prefix = isSelected && blink ? "> " : "  ";
-      this.drawText(
+      drawText(
+        this,
         centerX,
         y,
         prefix + options[i].label,
         isSelected ? COLORS.YELLOW : COLORS.LIGHT_GRAY,
+        true,
       );
       y += UI.LINE_HEIGHT * 2;
     }
     y += UI.LINE_HEIGHT;
 
     // Copyright notice
-    this.drawText(centerX, y, "copyleft 2019 dale w. morris");
+    drawText(this, centerX, y, "copyleft 2019 dale w. morris", COLORS.LIGHT_GRAY, true);
     y += UI.LINE_HEIGHT;
 
-    this.drawText(centerX, y, "dalesworld.ga");
+    drawText(this, centerX, y, "dalesworld.ga", COLORS.LIGHT_GRAY, true);
   }
 }
