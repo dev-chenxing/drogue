@@ -42,7 +42,7 @@ export function eAc(e: Mobile): number {
 export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
   const toHit = eDx(attacker) - eEv(target);
   const maxDmg = eDmg(attacker);
-  const roll = Math.floor(Math.random() * eDx(attacker)) + 1;
+  const roll = Math.floor(Math.random() * eDx(attacker) + 1);
 
   let damage = Math.floor(Math.random() * maxDmg) + 1;
   damage -= eAc(target);
@@ -72,7 +72,7 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
   }
 
   if (killingBlow) {
-    message += ` - the ${target.name} is slain!`;
+    message += `\n - the ${target.name} is slain!`;
   }
 
   return {

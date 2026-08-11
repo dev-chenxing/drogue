@@ -1,10 +1,12 @@
 import * as Phaser from "phaser";
 import { COLORS, UI } from "../game/constants/common";
-import { drawText } from "../game/drawText";
+import { drawText } from "../game/draw";
 
 export class InstructionsScene extends Phaser.Scene {
   private pageIndex: number = 0;
   private pages: string[][] = [];
+
+  private readonly pageColors = [COLORS.GREEN, COLORS.BLUE, COLORS.LAVENDER, COLORS.PINK];
 
   private keyEnter!: Phaser.Input.Keyboard.Key;
   private keySpace!: Phaser.Input.Keyboard.Key;
@@ -22,7 +24,6 @@ export class InstructionsScene extends Phaser.Scene {
     this.pages = [
       [
         "1 intro",
-        "",
         " drogue is a minimalistic rogue-",
         "like in the style of old-school",
         "text-based displays. it uses a",
@@ -141,22 +142,17 @@ export class InstructionsScene extends Phaser.Scene {
 
   private renderPage() {
     this.children.removeAll();
-    const startY = UI.LINE_HEIGHT * 2; // Start rendering from the second line
+    const startY = 0; // Start rendering from the top
 
     // Guard against out-of-bounds pageIndex and ensure lines is defined
     if (this.pageIndex < 0 || this.pageIndex >= this.pages.length) return;
     const lines = this.pages[this.pageIndex];
     if (!lines) return;
 
+    const color = this.pageColors[this.pageIndex % this.pageColors.length];
+
     lines.forEach((line, index) => {
-      const isHeading = line.match(/^\d/); // Check if the line starts with a number
-      drawText(
-        this,
-        UI.CHAR_WIDTH,
-        startY + index * UI.LINE_HEIGHT,
-        line,
-        isHeading ? COLORS.YELLOW : COLORS.WHITE,
-      );
+      drawText(this, 0, startY + index * UI.CHAR_HEIGHT, line, color);
     });
   }
 }

@@ -59,8 +59,10 @@ export class GameState {
     this.mode = "game";
     this.createPlayer();
     this.generateLevel();
-    this.showMessage("welcome to the dungeon", COLORS.GREEN);
-    this.showMessage("seek the orb of elad", COLORS.GREEN);
+    this.showMessage("Welcome to the dungeon.", COLORS.LAVENDER);
+    this.showMessage("You seek the infamous Orb of");
+    this.showMessage("Elad. Find it in the dungeon's");
+    this.showMessage("deepest floor or die trying!");
   }
 
   private createPlayer() {
@@ -136,6 +138,7 @@ export class GameState {
       this.tiles[x][y].id = "floor";
       this.tiles[x][y].character = ".";
       this.tiles[x][y].color = "gray";
+      this.tiles[x][y].walkable = true;
       this.showMessage("opened a door", COLORS.GREEN);
       this.endPlayerTurn();
     }

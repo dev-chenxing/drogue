@@ -1,24 +1,23 @@
 import * as Phaser from "phaser";
-import { COLORS } from "./game/constants/common";
+import { COLORS, UI } from "./game/constants/common";
 import { GameScene } from "./scenes/GameScene";
 import { HighScoresScene } from "./scenes/HighScoresScene";
 import { InstructionsScene } from "./scenes/InstructionsScene";
 import { MenuScene } from "./scenes/MenuScene";
-// import { PreloadScene } from "./scenes/PreloadScene";
+import { PreloadScene } from "./scenes/PreloadScene";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 512,
-  height: 384,
+  width: UI.MAP_WIDTH * UI.CHAR_WIDTH, // 32 * 14 = 448
+  height: UI.MAP_HEIGHT * UI.CHAR_HEIGHT, // 20 * 20 = 400
   pixelArt: true,
-  backgroundColor: COLORS.BLACK,
+  backgroundColor: COLORS.DARK_GRAY,
   parent: "game-container",
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  // scene: [PreloadScene, MenuScene, GameScene, InstructionsScene, HighScoresScene],
-  scene: [MenuScene, GameScene, InstructionsScene, HighScoresScene],
+  scene: [PreloadScene, MenuScene, GameScene, InstructionsScene, HighScoresScene],
 };
 
 new Phaser.Game(config);

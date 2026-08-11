@@ -42,13 +42,13 @@ export const TILES: { [key: string]: Tile } = {
   STAIRS: {
     id: "stairs",
     character: ">",
-    color: COLORS.LIGHT_GRAY,
+    color: COLORS.LAVENDER,
     walkable: true,
   },
   ORB: {
     id: "orb",
     character: "0",
-    color: COLORS.LIGHT_GRAY,
+    color: COLORS.BLUE,
     walkable: true,
   },
 };
@@ -79,10 +79,9 @@ export const LOCAL_STORAGE_KEY = "drogue_high_scores";
 
 export const UI = {
   FONT_FAMILY: "FT88 Gothique",
-  FONT_SIZE: "12px",
-  LINE_HEIGHT: 12,
-  CHAR_WIDTH: 8, // character width in pixels
-  CHAR_HEIGHT: 12, // character height in pixels
+  FONT_SIZE: "20px",
+  CHAR_WIDTH: 14, // character width in pixels
+  CHAR_HEIGHT: 20, // character height in pixels
   VIEWPORT_WIDTH: 15, // 15x15 viewport (0-14)
   VIEWPORT_HEIGHT: 15, // 15x15 viewport (0-14)
   MAP_WIDTH: 32,

@@ -3,7 +3,7 @@ import { COLORS, UI } from "../game/constants/common";
 import { GameState } from "../game/GameState";
 import { isVisible } from "../game/vision";
 import { eAc, eDmg, eEv, hpColor, mpColor } from "../game/combat";
-import { drawText } from "../game/drawText";
+import { drawText, hexToColor } from "../game/draw";
 
 export class GameScene extends Phaser.Scene {
   private gameState!: GameState;
@@ -127,7 +127,7 @@ export class GameScene extends Phaser.Scene {
       this.renderMap();
     } else {
       this.renderGameView();
-      this.renderStatusBar();
+      this.renderSidebar();
       this.renderMessages();
 
       if (this.gameState.mode === "inventory") this.renderMenus();
@@ -194,33 +194,31 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
-  private renderStatusBar() {
+  private renderSidebar() {
     const player = this.gameState.player;
     const startX = UI.VIEWPORT_WIDTH * UI.CHAR_WIDTH; // Start drawing to the right of the game view
     let currentY = 0;
 
-    // Level and Floor
-    this.textObjects.push(
-      drawText(this, startX, currentY, `level ${player.floor} floor ${this.gameState.depth}`),
-    );
-    currentY += UI.LINE_HEIGHT;
-
-    // XP
-    this.textObjects.push(drawText(this, startX, currentY, `xp ${player.xp}`));
-    currentY += UI.LINE_HEIGHT;
-
-    // Gold (align right)
+    // 0th row:　Level and Floor
     this.textObjects.push(
       drawText(
         this,
-        startX + 9 * UI.CHAR_WIDTH,
-        currentY - UI.LINE_HEIGHT,
-        `$$ ${player.gold}`,
-        COLORS.YELLOW,
+        startX,
+        currentY,
+        `level ${player.floor}  floor ${this.gameState.depth}`,
+        COLORS.WHITE,
       ),
     );
+    currentY += UI.CHAR_HEIGHT;
 
-    // HP
+    // 1st row: XP + Gold
+    this.textObjects.push(drawText(this, startX, currentY, `xp ${player.xp}`, COLORS.LAVENDER));
+    this.textObjects.push(
+      drawText(this, startX + 9 * UI.CHAR_WIDTH, currentY, `$$ ${player.gold}`, COLORS.YELLOW),
+    );
+    currentY += UI.CHAR_HEIGHT;
+
+    // 2nd row: HP + MP
     this.textObjects.push(
       drawText(
         this,
@@ -230,8 +228,6 @@ export class GameScene extends Phaser.Scene {
         hpColor(player),
       ),
     );
-
-    // MP
     this.textObjects.push(
       drawText(
         this,
@@ -241,47 +237,50 @@ export class GameScene extends Phaser.Scene {
         mpColor(player),
       ),
     );
-    currentY += UI.LINE_HEIGHT;
+    currentY += UI.CHAR_HEIGHT;
 
-    // Derived stats
-    this.textObjects.push(drawText(this, startX, currentY, `dm ${eDmg(player)}`, COLORS.RED));
+    // 3rd row: ST / DX / IN
     this.textObjects.push(
-      drawText(this, startX + 6 * UI.CHAR_WIDTH, currentY, `ev ${eEv(player)}`, COLORS.GREEN),
+      drawText(this, startX, currentY, `st ${player.st.current}`, COLORS.WHITE),
     );
     this.textObjects.push(
-      drawText(this, startX + 12 * UI.CHAR_WIDTH, currentY, `ac ${eAc(player)}`, COLORS.BLUE),
+      drawText(this, startX + 6 * UI.CHAR_WIDTH, currentY, `dx ${player.dx.current}`, COLORS.WHITE),
     );
-    currentY += UI.LINE_HEIGHT;
+    this.textObjects.push(
+      drawText(
+        this,
+        startX + 12 * UI.CHAR_WIDTH,
+        currentY,
+        `in ${player.int.current}`,
+        COLORS.WHITE,
+      ),
+    );
+    currentY += UI.CHAR_HEIGHT;
 
-    // Weapon
-    currentY += UI.LINE_HEIGHT;
-    if (player.weapon) {
-      const wandMarker = player.weapon.object.zap > 0 ? " [x]" : "";
-      this.textObjects.push(
-        drawText(
-          this,
-          startX,
-          currentY,
-          player.weapon.object.name + wandMarker,
-          player.weapon.object.color,
-        ),
-      );
-    } else {
-      this.textObjects.push(drawText(this, startX, currentY, "bare fists", COLORS.WHITE));
-    }
-    currentY += UI.LINE_HEIGHT;
+    // 4th row: DM / EV / AC
+    this.textObjects.push(drawText(this, startX, currentY, `dm ${eDmg(player)}`, COLORS.WHITE));
+    this.textObjects.push(
+      drawText(this, startX + 6 * UI.CHAR_WIDTH, currentY, `ev ${eEv(player)}`, COLORS.WHITE),
+    );
+    this.textObjects.push(
+      drawText(this, startX + 12 * UI.CHAR_WIDTH, currentY, `ac ${eAc(player)}`, COLORS.WHITE),
+    );
+    currentY += UI.CHAR_HEIGHT;
 
-    // Armor
-    if (player.armor) {
-      this.textObjects.push(
-        drawText(this, startX, currentY, player.armor.object.name, player.armor.object.color),
-      );
-    } else {
-      this.textObjects.push(drawText(this, startX, currentY, "clothes", COLORS.WHITE));
-    }
+    // 5th-6th rows: Weapon / Armor
+    const weaponName = player.weapon
+      ? player.weapon.object.zap > 0
+        ? player.weapon.object.name + " [x]"
+        : player.weapon.object.name
+      : "bare fists";
+    this.textObjects.push(drawText(this, startX, currentY, weaponName, COLORS.DARK_GRAY));
+    currentY += UI.CHAR_HEIGHT;
+    const armorName = player.armor ? player.armor.object.name : "clothes";
+    this.textObjects.push(drawText(this, startX, currentY, armorName, COLORS.DARK_GRAY));
+    currentY += UI.CHAR_HEIGHT;
 
-    // Visible enemy list
-    this.renderVisibleEnemies(startX, currentY + UI.LINE_HEIGHT * 2);
+    // started from 8th row: Visible enemy list
+    this.renderVisibleEnemies(startX, currentY + UI.CHAR_HEIGHT);
   }
 
   private renderVisibleEnemies(startX: number, startY: number) {
@@ -301,7 +300,7 @@ export class GameScene extends Phaser.Scene {
       }
 
       const x = startX + column * 9 * UI.CHAR_WIDTH;
-      const y = startY + row * UI.LINE_HEIGHT;
+      const y = startY + row * UI.CHAR_HEIGHT;
       this.textObjects.push(drawText(this, x, y, "*", hpColor(enemy)));
       this.textObjects.push(drawText(this, x + UI.CHAR_WIDTH, y, enemy.name, enemy.color));
       row++;
@@ -310,11 +309,11 @@ export class GameScene extends Phaser.Scene {
 
   private renderMessages() {
     const messages = this.gameState.messages;
-    const startY = UI.VIEWPORT_HEIGHT * UI.CHAR_HEIGHT + 4; // Start drawing below the game view
+    const startY = UI.VIEWPORT_HEIGHT * UI.CHAR_HEIGHT; // Start drawing below the game view
 
     for (let i = 0; i < messages.length; i++) {
       this.textObjects.push(
-        drawText(this, 0, startY + i * UI.LINE_HEIGHT, messages[i].text, messages[i].color),
+        drawText(this, 0, startY + i * UI.CHAR_HEIGHT, messages[i].text, messages[i].color),
       );
     }
   }
@@ -331,16 +330,16 @@ export class GameScene extends Phaser.Scene {
       const height = menu.height * UI.CHAR_HEIGHT;
 
       // Draw menu background (black rectangle)
-      this.graphics.fillStyle(this.hexToColor(COLORS.BLACK));
+      this.graphics.fillStyle(hexToColor(COLORS.BLACK));
       this.graphics.fillRect(posX, posY, width + UI.CHAR_WIDTH, height + UI.CHAR_HEIGHT);
 
       // Draw menu border
-      this.graphics.lineStyle(1, this.hexToColor(COLORS.WHITE));
+      this.graphics.lineStyle(1, hexToColor(COLORS.WHITE));
       this.graphics.strokeRect(posX, posY, width + UI.CHAR_WIDTH, height + UI.CHAR_HEIGHT);
 
       // Draw options
       for (let i = 0; i < menu.options.length; i++) {
-        const optionY = posY + (i + 1) * UI.LINE_HEIGHT;
+        const optionY = posY + (i + 1) * UI.CHAR_HEIGHT;
         const isSelected = isTop && i + 1 === this.gameState.menuSelect;
         const prefix = isSelected && blink ? ">" : " ";
         this.textObjects.push(
@@ -416,7 +415,7 @@ export class GameScene extends Phaser.Scene {
 
     // Highlight the target tile
     const weaponColor = this.gameState.player.weapon?.object.color || COLORS.WHITE;
-    this.graphics.fillStyle(this.hexToColor(weaponColor));
+    this.graphics.fillStyle(hexToColor(weaponColor));
     this.graphics.fillRect(cursorPosX, cursorPosY, UI.CHAR_WIDTH, UI.CHAR_HEIGHT - 2);
   }
 
@@ -425,13 +424,13 @@ export class GameScene extends Phaser.Scene {
     const cy = this.scale.height / 2;
 
     // Dark overlay
-    this.graphics.fillStyle(this.hexToColor(COLORS.BLACK), 0.7);
+    this.graphics.fillStyle(hexToColor(COLORS.BLACK), 0.7);
     this.graphics.fillRect(0, 0, this.scale.width, this.scale.height);
 
     const title = this.gameState.victory ? "VICTORY!" : "YOU ARE DEAD";
     const color = this.gameState.victory ? COLORS.GREEN : COLORS.RED;
 
-    this.textObjects.push(drawText(this, cx, cy - UI.CHAR_HEIGHT * 2, title, color));
+    this.textObjects.push(drawText(this, cx, cy - UI.CHAR_HEIGHT * 2, title, color, true));
 
     this.textObjects.push(
       drawText(
@@ -440,16 +439,20 @@ export class GameScene extends Phaser.Scene {
         cy,
         `Score: ${this.gameState.score} Floor: ${this.gameState.depth}`,
         COLORS.WHITE,
+        true,
       ),
     );
 
     this.textObjects.push(
-      drawText(this, cx, cy + UI.CHAR_HEIGHT * 2, "Press SPACE to continue", COLORS.LIGHT_GRAY),
+      drawText(
+        this,
+        cx,
+        cy + UI.CHAR_HEIGHT * 2,
+        "Press SPACE to continue",
+        COLORS.LIGHT_GRAY,
+        true,
+      ),
     );
-  }
-
-  private hexToColor(hex: string): number {
-    return Phaser.Display.Color.HexStringToColor(hex).color;
   }
 
   private drawLine(x1: number, y1: number, x2: number, y2: number, color: string) {
@@ -460,7 +463,7 @@ export class GameScene extends Phaser.Scene {
     let sy = y1 < y2 ? 1 : -1;
     let err = dx - dy;
 
-    const lineColor = this.hexToColor(color);
+    const lineColor = hexToColor(color);
     this.graphics.fillStyle(lineColor);
 
     while (true) {

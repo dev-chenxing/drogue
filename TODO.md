@@ -1,7 +1,7 @@
 # DROGUE - TODO
 
-- [ ] fix(gamescene): constrict the game to 32x20 tiles. the messages menu is currently overflowing the tiles.
-- [ ] fix: player cannot move through opened doors.
+- [ ] feat: a true 32x20 ASCII-style layout by rendering grid text one glyph per tile, instead of using one multi-character Text object.
+- [x] fix: player cannot move through opened doors.
 - [ ] refactor(dungeon): instead of `getRandomItem`, add `LeveledItem`/`LeveledEntity` types
 - [ ] refactor(types): not sure if `export type GameMode = "menu" | "game" | "inventory" | "map" | "target" | "dead" | "win";` is the best structure. `menu` and `game` are the only two modes that are mutually exclusive, `inventory` and `map` are both some kind of `menu`. I think here `menu` probably should be `mainMenu`. And `inventory` and `map` should not be considered `GameMode` but rather related to `Menu` and/or `UIElement`
 - [ ] refactor(types): I don't think `stairsPos` and `orbPos` should be a direct access of `DungeonLevel`, because `DungeonLevel` already has a `tiles` property, and `stairsPos` and `orbPos` are just a specific type of tile. I think it would be better to have a method like `getTile(id: string): Tile | null` or something similar.
@@ -12,4 +12,5 @@
 - [ ] fix(items): where the item shows up should not be based on a `floors` property in the item data, but rather implement a `LeveledItem` type that has a `level` property, and then filter the items based on the current level. This will allow us to have more control over which items show up on which levels, and also allow us to have more complex item placement logic in the future.
 - [ ] refactor(gamestate): hardcoded item id checks in `useItem` should be replaced with an `effects` property in the item data, which will allow us to have more complex item effects in the future. For example, instead of checking for `health potion` or `magic potion`, we can check for `item.effects.restoreHp` or `item.effects.restoreMp`, which will allow us to have more complex item effects in the future.
 - [ ] refactor(menuscene): state, input, and rendering logic are all mixed in a `Scene` class. Reusability would be improved if we separated them. Menu options (`const options = ["start game", "instructions"]`) shouldn't be hardcoded in the rendering logic.
-- [ ] fix(menuscene): `selectedOption` has no bounds checking. `moveUp` and `moveDown` logic hardcode the number of options, which is bad practice. We should have a `getOptions()` method that returns the current options, and then use that to determine the bounds of `selectedOption`.
+- [x] fix(menuscene): `selectedOption` has no bounds checking. `moveUp` and `moveDown` logic hardcode the number of options, which is bad practice. We should have a `getOptions()` method that returns the current options, and then use that to determine the bounds of `selectedOption`.
+- [x] style(preload): use chars instead of fillRect for the progress bar
