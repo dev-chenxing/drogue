@@ -56,7 +56,11 @@ export class GameScene extends Phaser.Scene {
       this.handleTargetInput();
     } else if (mode === "dead" || mode === "win") {
       if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.space)) {
-        this.gameState.saveHighScore("PLAYER");
+        this.gameState.saveManager.saveHighScore(
+          "PLAYER",
+          this.gameState.score,
+          this.gameState.depth,
+        );
         this.scene.start("MenuScene");
       }
     }
@@ -81,16 +85,16 @@ export class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keyWASD.D)) this.gameState.handleMove({ x: 1, y: 0 });
 
     // O = Open menu
-    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.openMenu();
+    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.menuManager.openMenu();
     // X = use wand
     if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.enterTargetingMode();
   }
 
   private handleMenuInput() {
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.up)) this.gameState.menuUp();
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down)) this.gameState.menuDown();
-    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.menuBack();
-    if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.menuSelectOption();
+    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.up)) this.gameState.menuManager.menuUp();
+    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down)) this.gameState.menuManager.menuDown();
+    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.menuManager.menuBack();
+    if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.menuManager.menuSelectOption();
   }
 
   private handleMapInput() {
@@ -102,7 +106,7 @@ export class GameScene extends Phaser.Scene {
       this.gameState.moveMapCamera({ x: 0, y: -1 });
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
       this.gameState.moveMapCamera({ x: 0, y: 1 });
-    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.closeMenu();
+    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.menuManager.closeMenu();
   }
 
   private handleTargetInput() {
@@ -164,7 +168,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Draw entities (enemies)
-    for (const entity of this.gameState.entities) {
+    for (const entity of this.gameState.entityManager.getEntities()) {
       if (isVisible(playerPos, entity.position, tiles)) {
         const viewX = entity.position.x - playerPos.x + Math.floor(UI.VIEWPORT_WIDTH / 2);
         const viewY = entity.position.y - playerPos.y + Math.floor(UI.VIEWPORT_HEIGHT / 2);
@@ -284,9 +288,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private renderVisibleEnemies(startX: number, startY: number) {
-    const visibleEnemies = this.gameState.entities.filter((e) =>
-      isVisible(this.gameState.player.position, e.position, this.gameState.tiles),
-    );
+    const visibleEnemies = this.gameState.entityManager
+      .getEntities()
+      .filter((e) => isVisible(this.gameState.player.position, e.position, this.gameState.tiles));
 
     let column = 0;
     let row = 0;
@@ -308,7 +312,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private renderMessages() {
-    const messages = this.gameState.messages;
+    const messages = this.gameState.msgLog.getMessages();
     const startY = UI.VIEWPORT_HEIGHT * UI.CHAR_HEIGHT; // Start drawing below the game view
 
     for (let i = 0; i < messages.length; i++) {
@@ -319,7 +323,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private renderMenus() {
-    const menus = this.gameState.menus;
+    const menus = this.gameState.menuManager.getMenus();
     const blink = this.gameState.getBlinkState();
 
     for (const menu of menus) {
@@ -340,7 +344,7 @@ export class GameScene extends Phaser.Scene {
       // Draw options
       for (let i = 0; i < menu.options.length; i++) {
         const optionY = posY + (i + 1) * UI.CHAR_HEIGHT;
-        const isSelected = isTop && i + 1 === this.gameState.menuSelect;
+        const isSelected = isTop && i + 1 === this.gameState.menuManager.getMenuSelect();
         const prefix = isSelected && blink ? ">" : " ";
         this.textObjects.push(
           drawText(

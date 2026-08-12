@@ -1,5 +1,7 @@
+import { getItem } from "./Item";
 import { ENTITY_DATA } from "./constants/entities";
-import type { EntityData, Mobile, Vector2 } from "./types";
+import type { GameState } from "./GameState";
+import type { EntityData, ItemStack, Mobile, Vector2 } from "./types";
 
 export function getEntity(entityId: string): EntityData {
   const entity = ENTITY_DATA.find((candidate) => candidate.name === entityId);
@@ -67,4 +69,62 @@ export function createMobile(
     armor: null,
     items: [],
   };
+}
+
+export class EntityManager {
+  private gameState: GameState;
+  private entities: Mobile[] = [];
+
+  constructor(gameState: GameState) {
+    this.gameState = gameState;
+  }
+
+  public addEntity(entity: Mobile) {
+    this.entities.push(entity);
+  }
+
+  public addEntities(entities: Mobile[]) {
+    this.entities.push(...entities);
+  }
+
+  public killEntity(entity: Mobile) {
+    // Drop gold if the entity has any
+    if (entity.gold >= 1) {
+      const gold = getItem("gold");
+      const goldCount = Math.floor(Math.random() * entity.gold) + 1;
+      const goldItem: ItemStack = {
+        itemData: {
+          count: goldCount,
+          position: { ...entity.position },
+          seen: true,
+        },
+        object: {
+          ...gold,
+          id: `gold${goldCount}`,
+        },
+      };
+      this.gameState.itemManager.addItem(goldItem);
+    }
+
+    this.gameState.player.xp += entity.xp;
+    this.gameState.checkLevelUp();
+    const index = this.entities.indexOf(entity);
+    if (index >= 0) this.entities.splice(index, 1);
+  }
+
+  public getEntities(): Mobile[] {
+    return [...this.entities];
+  }
+
+  public getEntityAtPosition(position: Vector2): Mobile | null {
+    return (
+      this.entities.find(
+        (entity) => entity.position.x === position.x && entity.position.y === position.y,
+      ) || null
+    );
+  }
+
+  public clear() {
+    this.entities = [];
+  }
 }

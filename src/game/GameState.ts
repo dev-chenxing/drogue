@@ -1,64 +1,61 @@
 import { AISystem } from "./AISystem";
 import { meleeAttack, magicAttack } from "./combat";
-import { COLORS, DUNGEON, LOCAL_STORAGE_KEY } from "./constants/common";
+import { COLORS, DUNGEON } from "./constants/common";
 import { DungeonGenerator } from "./Dungeon";
-import { createMobile, getEntity } from "./Entity";
-import { getItem } from "./Item";
-import type {
-  Armor,
-  GameMode,
-  ItemType,
-  ItemStack,
-  MenuState,
-  Message,
-  Mobile,
-  Statistic,
-  Tile,
-  Vector2,
-  Weapon,
-} from "./types";
+import { createMobile, EntityManager, getEntity } from "./Entity";
+import { ItemManager } from "./Item";
+import { MenuManager } from "./Menu";
+import { MessageLog } from "./MessageLog";
+import { SaveManger } from "./Save";
+import { modStatisticBase, modStatisticCurrent, modStatisticValue } from "./Stat";
+import type { Armor, GameMode, ItemStack, Mobile, Tile, Vector2, Weapon } from "./types";
 import { distance, hasLineOfSight, updateVisibility } from "./Vision";
 
 export class GameState {
   public mode: GameMode = "game";
-  public player!: Mobile;
-  public entities: Mobile[] = [];
-  public items: ItemStack[] = [];
-  public tiles: Tile[][] = [];
-  public depth: number = 1;
+  public gameOver = false;
+  public victory = false;
 
-  public messages: Message[] = [];
-  public menus: MenuState[] = [];
-  public menuSelect = 1;
-  public selectedItemIndex = 0;
+  public tiles: Tile[][] = [];
+
+  public player!: Mobile;
+  public depth: number = 1;
 
   public showMap = false;
   public mapCamera: Vector2 = { x: 0, y: 0 };
-
   public showCursor = false;
   public cursorPosition: Vector2 = { x: 7, y: 7 };
 
-  public gameOver = false;
-  public victory = false;
   public score = 0;
 
-  private aiSystem = new AISystem();
   private turnCount = 0;
   private blinkTimer = 0;
 
+  private aiSystem: AISystem;
+  public msgLog: MessageLog;
+  public entityManager: EntityManager;
+  public itemManager: ItemManager;
+  public menuManager: MenuManager;
+  public saveManager: SaveManger;
+
   constructor() {
+    this.aiSystem = new AISystem();
+    this.msgLog = new MessageLog();
+    this.entityManager = new EntityManager(this);
+    this.itemManager = new ItemManager(this);
+    this.menuManager = new MenuManager(this);
+    this.saveManager = new SaveManger();
     this.newGame();
   }
 
   public newGame() {
     this.depth = 1;
-    this.messages = [];
-    this.menus = [];
     this.gameOver = false;
     this.victory = false;
     this.mode = "game";
     this.createPlayer();
     this.generateLevel();
+    this.menuManager.clear();
     this.showMessage("Welcome to the dungeon.", COLORS.LAVENDER);
     this.showMessage("You seek the infamous Orb of");
     this.showMessage("Elad. Find it in the dungeon's");
@@ -80,8 +77,13 @@ export class GameState {
     const generator = new DungeonGenerator(this.depth);
     const { level, entities, items, playerStart } = generator.generate();
     this.tiles = level.tiles;
-    this.entities = entities;
-    this.items = items;
+
+    // Clear old data, hand new data to managers
+    this.entityManager.clear();
+    this.entityManager.addEntities(entities);
+    this.itemManager.clear();
+    this.itemManager.addItems(items);
+
     this.player.position = playerStart;
     updateVisibility(this.player.position, this.tiles);
   }
@@ -104,7 +106,7 @@ export class GameState {
     };
 
     // Collide with enemies = attack
-    const enemy = this.getEntityAtPosition(newPos);
+    const enemy = this.entityManager.getEntityAtPosition(newPos);
     if (enemy) {
       this.playerAttack(enemy);
       this.endPlayerTurn();
@@ -115,7 +117,7 @@ export class GameState {
     if (this.isWalkable(newPos)) {
       this.player.position = newPos;
       updateVisibility(this.player.position, this.tiles);
-      this.autoPickupItems();
+      this.itemManager.autoPickupItems();
       // Check for stairs
       if (this.tiles[newPos.x][newPos.y].id === "stairs") {
         this.descendStairs();
@@ -135,7 +137,7 @@ export class GameState {
     }
   }
 
-  private openDoor(tile: Tile) {
+  public openDoor(tile: Tile) {
     tile.id = "floor";
     tile.character = ".";
     tile.color = "gray";
@@ -146,36 +148,11 @@ export class GameState {
     const result = meleeAttack(this.player, enemy);
     this.showMessage(result.message, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
     if (result.killingBlow) {
-      this.killEntity(enemy);
+      this.entityManager.killEntity(enemy);
     }
   }
 
-  private killEntity(entity: Mobile) {
-    // Drop gold if the entity has any
-    if (entity.gold >= 1) {
-      const gold = getItem("gold");
-      const goldItem: ItemStack = {
-        itemData: {
-          count: Math.floor(Math.random() * entity.gold) + 1,
-          position: { ...entity.position },
-          seen: true,
-        },
-        object: {
-          ...gold,
-          id: `gold${this.items.length}`,
-        },
-      };
-      this.items.push(goldItem);
-    }
-
-    this.player.xp += entity.xp;
-    this.checkLevelUp();
-
-    const index = this.entities.indexOf(entity);
-    if (index >= 0) this.entities.splice(index, 1);
-  }
-
-  private checkLevelUp() {
+  public checkLevelUp() {
     const xpForNextLevel = Math.pow(2, this.player.floor + 3);
     if (this.player.xp >= xpForNextLevel) {
       this.player.floor++;
@@ -184,69 +161,14 @@ export class GameState {
       // Random stat boosts (3 rolls)
       for (let i = 0; i < 3; i++) {
         const roll = Math.random() * 99 + 1;
-        if (roll < 34) this.modStatistic(this.player.st, undefined, undefined, 1);
-        else if (roll < 67) this.modStatistic(this.player.dx, undefined, undefined, 1);
-        else this.modStatistic(this.player.int, undefined, undefined, 1);
+        if (roll < 34) modStatisticValue(this.player.st, 1);
+        else if (roll < 67) modStatisticValue(this.player.dx, 1);
+        else modStatisticValue(this.player.int, 1);
       }
 
-      this.modStatistic(this.player.hp, Math.floor(Math.random() * 3) + 1);
-      this.modStatistic(this.player.mp, Math.floor(Math.random() * 2) + 1);
+      modStatisticBase(this.player.hp, Math.floor(Math.random() * 3) + 1);
+      modStatisticBase(this.player.mp, Math.floor(Math.random() * 2) + 1);
     }
-  }
-
-  // Modify a statistic.
-  // If `base` is set, the base value will be modified.
-  // If `current` is set, the current value will be modified.
-  // If `value` is set, both the base and current values will be modified.
-  public modStatistic(statistic: Statistic, base?: number, current?: number, value?: number) {
-    if (value !== undefined) {
-      statistic.baseRaw += value;
-      statistic.base = Math.max(0, statistic.baseRaw);
-      statistic.currentRaw += value;
-      statistic.current = Math.max(0, statistic.currentRaw);
-    } else if (current !== undefined) {
-      statistic.currentRaw = Math.min(statistic.currentRaw + current, statistic.baseRaw);
-      statistic.current = Math.max(0, statistic.currentRaw);
-    } else if (base !== undefined) {
-      statistic.baseRaw = statistic.baseRaw + base;
-      statistic.base = Math.max(0, statistic.baseRaw);
-    }
-    if (statistic.base > 0) {
-      statistic.normalized = statistic.current / statistic.base;
-    } else {
-      statistic.normalized = 0;
-    }
-  }
-
-  private autoPickupItems() {
-    for (let i = this.items.length - 1; i >= 0; i--) {
-      const itemStack = this.items[i];
-      if (
-        itemStack.itemData.position.x === this.player.position.x &&
-        itemStack.itemData.position.y === this.player.position.y
-      ) {
-        if (itemStack.object.id === "gold") {
-          // Gold is automatically added to the player's gold count
-          this.player.gold += itemStack.itemData.count;
-          this.showMessage(`gained ${itemStack.itemData.count} gold`, COLORS.YELLOW);
-          this.items.splice(i, 1);
-        } else {
-          // Inventory item pickup
-          const playerItems = this.player.items;
-          if (playerItems.length < 14) {
-            const vowel = this.isVowel(itemStack.object.name[0]);
-            this.showMessage(`got ${vowel ? "an" : "a"} ${itemStack.object.name}`, COLORS.GREEN);
-            this.items.splice(i, 1);
-            // Add the item to the player's inventory
-            this.player.items.push(itemStack);
-          }
-        }
-      }
-    }
-  }
-
-  private isVowel(char: string): boolean {
-    return ["a", "e", "i", "o", "u"].includes(char.toLowerCase());
   }
 
   private descendStairs() {
@@ -270,7 +192,7 @@ export class GameState {
     this.turnCount++;
 
     // AI turns
-    this.processAITurn();
+    this.aiSystem.processAITurn(this);
 
     // Check if the player is dead after the AI turn
     if (this.player.hp.current <= 0) {
@@ -282,191 +204,13 @@ export class GameState {
     }
   }
 
-  private processAITurn() {
-    // Compute distance map from player position
-    this.aiSystem.computeDistanceMap(this.player.position, this.tiles, this.entities);
-
-    for (const entity of this.entities) {
-      if (entity.hp.current <= 0) continue; // Skip dead entities
-
-      const distanceToPlayer = distance(this.player.position, entity.position);
-
-      // Only move entities that are within vision range + 2 tiles
-      if (distanceToPlayer > DUNGEON.VIEW_DISTANCE + 2) continue;
-
-      // Find the closest path to the player and move towards them if not adjacent
-      const step = this.aiSystem.getNextStep(entity);
-      const newPos = { x: entity.position.x + step.dx, y: entity.position.y + step.dy };
-
-      // Check if the new position is walkable and not occupied by another entity
-      const isWalkable = this.isWalkable(newPos);
-      const isOccupied = this.getEntityAtPosition(newPos) !== undefined;
-
-      if (isWalkable && !isOccupied) {
-        // Path is clear, move the entity
-        entity.position = newPos;
-      } else {
-        // Path is blocked, trigger bumping
-        this.handleEntityBump(entity, newPos);
-      }
-    }
-  }
-
-  private handleEntityBump(entity: Mobile, targetPos: Vector2) {
-    // Bump into entities
-    const targetEntity = this.getEntityAtPosition(targetPos);
-    if (targetEntity) {
-      // Attack if the entity is adjacent
-      const result = meleeAttack(entity, targetEntity);
-      const color = result.hit ? COLORS.RED : COLORS.LIGHT_GRAY;
-      this.showMessage(result.message, color);
-      if (result.killingBlow) {
-        this.killEntity(targetEntity);
-      }
-      return;
-    }
-
-    // Bump into door
-    const tile = this.tiles[targetPos.x]?.[targetPos.y];
-    if (tile && tile.id === "door") {
-      this.openDoor(tile);
-      return;
-    }
-
-    // Bump into wall or other non-walkable tile, do nothing
-  }
-
-  private getEntityAtPosition(position: Vector2): Mobile | undefined {
-    return this.entities.find(
-      (entity) => entity.position.x === position.x && entity.position.y === position.y,
-    );
-  }
-
   private isWalkable(position: Vector2): boolean {
     if (!this.tiles[position.x] || !this.tiles[position.x][position.y]) return false;
     const tile = this.tiles[position.x][position.y];
     return tile.walkable;
   }
 
-  public openMenu() {
-    if (this.mode !== "game") return;
-    this.mode = "inventory";
-    this.menuSelect = 1;
-    this.menus = [
-      {
-        positionX: 8,
-        positionY: 7,
-        width: 15,
-        height: 5,
-        title: "",
-        options: ["inventory", "map"],
-        action: 1,
-      },
-    ];
-  }
-
-  public closeMenu() {
-    this.menus = [];
-    this.mode = "game";
-    this.showMap = false;
-  }
-
-  public menuUp() {
-    if (this.menuSelect > 1) this.menuSelect--;
-    else {
-      const currentMenu = this.menus[this.menus.length - 1];
-      if (currentMenu) this.menuSelect = currentMenu.options.length;
-    }
-  }
-
-  public menuDown() {
-    const currentMenu = this.menus[this.menus.length - 1];
-    if (currentMenu) {
-      if (this.menuSelect < currentMenu.options.length) this.menuSelect++;
-      else this.menuSelect = 1;
-    }
-  }
-
-  public menuSelectOption() {
-    const currentMenu = this.menus[this.menus.length - 1];
-    if (!currentMenu) return;
-
-    if (currentMenu.action === 1) {
-      // Main menu
-      if (this.menuSelect === 1) {
-        // Inventory
-        const inventoryItems = this.player.items;
-        const itemNames = inventoryItems.map((itemStack) => itemStack.object.name);
-        this.menus.push({
-          positionX: 3,
-          positionY: 1,
-          width: 25,
-          height: 17,
-          title: "",
-          options: itemNames,
-          action: 2,
-        });
-        this.menuSelect = 1;
-      } else if (this.menuSelect === 2) {
-        // Map
-        this.showMap = true;
-        this.mapCamera = { ...this.player.position };
-        this.mode = "map";
-      }
-    } else if (currentMenu.action === 2) {
-      // Inventory item selected
-      const inventoryItems = this.player.items;
-      if (inventoryItems.length > 0) {
-        this.selectedItemIndex = this.menuSelect - 1;
-        this.menuSelect = 1;
-
-        const selectedItem = inventoryItems[this.selectedItemIndex];
-        const useWords: Partial<Record<ItemType, string>> = {
-          weapon: "wield",
-          armor: "wear",
-          potion: "drink",
-        };
-        const useWord = useWords[selectedItem.object.type] ?? "use";
-
-        this.menus.push({
-          positionX: 8,
-          positionY: 7,
-          width: 16,
-          height: 5,
-          title: "",
-          options: [useWord, "drop", "cancel"],
-          action: 3,
-        });
-      }
-    } else if (currentMenu.action === 3) {
-      // Inventory item action selected
-      const inventoryItems = this.player.items;
-      const selectedItem = inventoryItems[this.selectedItemIndex];
-      if (!selectedItem) return;
-
-      if (this.menuSelect === 1) {
-        // Use/Equip/Drink the item
-        this.useItem(selectedItem);
-      } else if (this.menuSelect === 2) {
-        // Drop the item
-        this.dropItem(selectedItem);
-      }
-
-      // Close the action menu after using or dropping the item
-      while (this.menus.length > 1) {
-        this.menus.pop();
-      }
-      this.mode = "game";
-    }
-  }
-
-  private removeItemSelected() {
-    const inventoryItems = this.player.items;
-    inventoryItems.splice(this.selectedItemIndex, 1);
-    this.selectedItemIndex = Math.max(0, this.selectedItemIndex - 1);
-  }
-
-  private useItem(item: ItemStack) {
+  public useItem(item: ItemStack) {
     if (item.object.type === "weapon") {
       // Wield the item
       this.player.weapon = item as ItemStack<Weapon>;
@@ -479,36 +223,27 @@ export class GameState {
       // Drink the item
       if (item.object.id === "health potion") {
         const healAmount = Math.floor(this.player.hp.base * 0.67);
-        this.modStatistic(this.player.hp, undefined, healAmount);
+        modStatisticCurrent(this.player.hp, healAmount);
       } else if (item.object.id === "magic potion") {
         const magicAmount = Math.floor(this.player.mp.base * 0.67);
-        this.modStatistic(this.player.mp, undefined, magicAmount);
+        modStatisticCurrent(this.player.mp, magicAmount);
       }
       // Remove the item from inventory after use
-      this.removeItemSelected();
+      this.menuManager.removeItemSelected();
       this.showMessage(`drank the ${item.object.name}`, item.object.color);
     }
   }
 
-  private dropItem(item: ItemStack) {
+  public dropItem(item: ItemStack) {
     if (this.player.weapon === item) this.player.weapon = null;
     if (this.player.armor === item) this.player.armor = null;
 
     // Drop the item at the player's current position
     item.itemData.position = { ...this.player.position };
     item.itemData.seen = true;
-    this.items.push(item);
-    this.removeItemSelected();
+    this.itemManager.addItem(item);
+    this.menuManager.removeItemSelected();
     this.showMessage(`dropped the ${item.object.name}`);
-  }
-
-  public menuBack() {
-    if (this.menus.length > 1) {
-      this.menus.pop();
-      this.menuSelect = 1;
-    } else {
-      this.closeMenu();
-    }
   }
 
   public moveMapCamera(direction: Vector2) {
@@ -551,19 +286,19 @@ export class GameState {
       return;
     }
 
-    this.modStatistic(this.player.mp, undefined, -this.player.weapon.object.zap);
+    modStatisticCurrent(this.player.mp, -this.player.weapon.object.zap);
 
     const targetPos = {
       x: this.cursorPosition.x + this.player.position.x - 7,
       y: this.cursorPosition.y + this.player.position.y - 7,
     };
 
-    for (const entity of this.entities) {
+    for (const entity of this.entityManager.getEntities()) {
       if (entity.position.x === targetPos.x && entity.position.y === targetPos.y) {
         const result = magicAttack(this.player, entity);
         this.showMessage(result.message, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
         if (result.killingBlow) {
-          this.killEntity(entity);
+          this.entityManager.killEntity(entity);
         }
         break;
       }
@@ -578,40 +313,7 @@ export class GameState {
   }
 
   // Messaging system
-  private showMessage(text: string, color = "white") {
-    this.messages.push({ text, color });
-    if (this.messages.length > 5) {
-      this.messages.shift();
-    }
-  }
-
-  // High scores
-  public getHighScores(): { name: string; score: number; depth: number }[] {
-    try {
-      const storedScores = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedScores) {
-        return JSON.parse(storedScores);
-      }
-    } catch (error) {
-      console.error("Error retrieving high scores:", error);
-    }
-
-    return [
-      { name: "DALE", score: 1000, depth: 9 },
-      { name: "GUEST", score: 500, depth: 5 },
-      { name: "NOOB", score: 100, depth: 2 },
-    ];
-  }
-
-  public saveHighScore(name: string) {
-    const highScores = this.getHighScores();
-    highScores.push({ name, score: this.score, depth: this.depth });
-    highScores.sort((a, b) => b.score - a.score);
-    const top5 = highScores.slice(0, 5);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(top5));
-    } catch (error) {
-      console.error("Error saving high scores:", error);
-    }
+  public showMessage(text: string, color = "white") {
+    this.msgLog.showMessage(text, color);
   }
 }

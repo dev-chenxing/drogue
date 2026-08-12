@@ -1,5 +1,8 @@
-import { DIRECTIONS, DUNGEON } from "./constants/common";
+import { meleeAttack } from "./combat";
+import { COLORS, DIRECTIONS, DUNGEON } from "./constants/common";
+import type { GameState } from "./GameState";
 import type { Mobile, Tile, Vector2 } from "./types";
+import { distance } from "./Vision";
 
 interface DistCell {
   distance: number;
@@ -85,5 +88,61 @@ export class AISystem {
       return this.distanceMap[x][y].distance;
     }
     return Infinity;
+  }
+
+  public processAITurn(gameState: GameState): void {
+    const { player, tiles } = gameState;
+    const entities = gameState.entityManager.getEntities();
+    // Compute distance map from player position
+    this.computeDistanceMap(player.position, tiles, entities);
+
+    for (const entity of entities) {
+      if (entity.hp.current <= 0) continue; // Skip dead entities
+
+      const distanceToPlayer = distance(player.position, entity.position);
+
+      // Only move entities that are within vision range + 2 tiles
+      if (distanceToPlayer > DUNGEON.VIEW_DISTANCE + 2) continue;
+
+      // Find the closest path to the player and move towards them if not adjacent
+      const step = this.getNextStep(entity);
+      const newPos = { x: entity.position.x + step.dx, y: entity.position.y + step.dy };
+
+      // Check if the new position is walkable and not occupied by another entity
+      const isWalkable = this.isWalkable(newPos.x, newPos.y, tiles, entities);
+      const isOccupied = gameState.entityManager.getEntityAtPosition(newPos) !== null;
+
+      if (isWalkable && !isOccupied) {
+        // Path is clear, move the entity
+        entity.position = newPos;
+      } else {
+        // Path is blocked, trigger bumping
+        this.handleEntityBump(entity, newPos, gameState);
+      }
+    }
+  }
+
+  private handleEntityBump(entity: Mobile, targetPos: Vector2, gameState: GameState) {
+    // Bump into entities
+    const targetEntity = gameState.entityManager.getEntityAtPosition(targetPos);
+    if (targetEntity) {
+      // Attack if the entity is adjacent
+      const result = meleeAttack(entity, targetEntity);
+      const color = result.hit ? COLORS.RED : COLORS.LIGHT_GRAY;
+      gameState.showMessage(result.message, color);
+      if (result.killingBlow) {
+        gameState.entityManager.killEntity(targetEntity);
+      }
+      return;
+    }
+
+    // Bump into door
+    const tile = gameState.tiles[targetPos.x]?.[targetPos.y];
+    if (tile && tile.id === "door") {
+      gameState.openDoor(tile);
+      return;
+    }
+
+    // Bump into wall or other non-walkable tile, do nothing
   }
 }

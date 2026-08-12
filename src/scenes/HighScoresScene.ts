@@ -12,7 +12,7 @@ export class HighScoresScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.BLACK);
 
     const gameState = new GameState();
-    const highScores = gameState.getHighScores();
+    const highScores = gameState.saveManager.getHighScores();
     const titleText = "HIGH SCORES";
     const cx = this.scale.width / 2;
     let y = UI.CHAR_HEIGHT * 4;
