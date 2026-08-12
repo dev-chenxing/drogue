@@ -1,8 +1,8 @@
 import { TILES, DUNGEON, DIRECTIONS } from "./constants/common";
-import { ITEM_DATA } from "./constants/ItemData";
-import { ENTITY_DATA } from "./constants/EntityData";
-import { createMobile } from "./EntityFactory";
-import { getItem } from "./ItemFactory";
+import { ITEM_DATA } from "./constants/items";
+import { ENTITY_DATA } from "./constants/entities";
+import { createMobile } from "./Entity";
+import { getItem } from "./Item";
 import type { DungeonLevel, EntityData, ItemStack, Mobile, Tile, Vector2 } from "./types";
 
 interface Room {

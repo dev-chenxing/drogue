@@ -1,4 +1,4 @@
-import { ENTITY_DATA } from "./constants/EntityData";
+import { ENTITY_DATA } from "./constants/entities";
 import type { EntityData, Mobile, Vector2 } from "./types";
 
 export function getEntity(entityId: string): EntityData {

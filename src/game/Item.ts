@@ -1,4 +1,4 @@
-import { ITEM_DATA } from "./constants/ItemData";
+import { ITEM_DATA } from "./constants/items";
 import type { ItemTemplate } from "./types";
 
 export function getItem(itemId: string): ItemTemplate {

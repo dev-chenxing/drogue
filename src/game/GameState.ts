@@ -1,9 +1,9 @@
 import { AISystem } from "./AISystem";
 import { meleeAttack, magicAttack } from "./combat";
 import { COLORS, DUNGEON, LOCAL_STORAGE_KEY } from "./constants/common";
-import { DungeonGenerator } from "./DungeonGenerator";
-import { createMobile, getEntity } from "./EntityFactory";
-import { getItem } from "./ItemFactory";
+import { DungeonGenerator } from "./Dungeon";
+import { createMobile, getEntity } from "./Entity";
+import { getItem } from "./Item";
 import type {
   Armor,
   GameMode,
@@ -17,7 +17,7 @@ import type {
   Vector2,
   Weapon,
 } from "./types";
-import { distance, hasLineOfSight, updateVisibility } from "./vision";
+import { distance, hasLineOfSight, updateVisibility } from "./Vision";
 
 export class GameState {
   public mode: GameMode = "game";
@@ -127,21 +127,19 @@ export class GameState {
       this.endPlayerTurn();
     } else {
       // Bump into a wall or door
-      this.handleActivate(newPos.x, newPos.y);
+      const tile = this.tiles[newPos.x]?.[newPos.y];
+      if (tile && tile.id === "door") {
+        this.openDoor(tile);
+        this.endPlayerTurn();
+      }
     }
   }
 
-  private handleActivate(x: number, y: number) {
-    // Open doors at the given coordinates
-    const tile = this.tiles[x]?.[y];
-    if (tile && tile.id === "door") {
-      this.tiles[x][y].id = "floor";
-      this.tiles[x][y].character = ".";
-      this.tiles[x][y].color = "gray";
-      this.tiles[x][y].walkable = true;
-      this.showMessage("opened a door", COLORS.GREEN);
-      this.endPlayerTurn();
-    }
+  private openDoor(tile: Tile) {
+    tile.id = "floor";
+    tile.character = ".";
+    tile.color = "gray";
+    tile.walkable = true;
   }
 
   private playerAttack(enemy: Mobile) {
@@ -234,7 +232,7 @@ export class GameState {
           this.items.splice(i, 1);
         } else {
           // Inventory item pickup
-          const playerItems = this.getInventoryItems();
+          const playerItems = this.player.items;
           if (playerItems.length < 14) {
             const vowel = this.isVowel(itemStack.object.name[0]);
             this.showMessage(`got ${vowel ? "an" : "a"} ${itemStack.object.name}`, COLORS.GREEN);
@@ -245,10 +243,6 @@ export class GameState {
         }
       }
     }
-  }
-
-  public getInventoryItems(): ItemStack[] {
-    return this.player.items;
   }
 
   private isVowel(char: string): boolean {
@@ -298,21 +292,48 @@ export class GameState {
       const distanceToPlayer = distance(this.player.position, entity.position);
 
       // Only move entities that are within vision range + 2 tiles
-      if (distanceToPlayer <= DUNGEON.VIEW_DISTANCE + 2) {
-        // If the entity is adjacent to the player, attack
-        if (distanceToPlayer <= 1.5) {
-          const result = meleeAttack(entity, this.player);
-          this.showMessage(result.message, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
-        } else {
-          // Move the entity towards the player
-          const step = this.aiSystem.getNextStep(entity);
-          const newPos = { x: entity.position.x + step.dx, y: entity.position.y + step.dy };
-          if (this.isWalkable(newPos) && !this.getEntityAtPosition(newPos)) {
-            entity.position = newPos;
-          }
-        }
+      if (distanceToPlayer > DUNGEON.VIEW_DISTANCE + 2) continue;
+
+      // Find the closest path to the player and move towards them if not adjacent
+      const step = this.aiSystem.getNextStep(entity);
+      const newPos = { x: entity.position.x + step.dx, y: entity.position.y + step.dy };
+
+      // Check if the new position is walkable and not occupied by another entity
+      const isWalkable = this.isWalkable(newPos);
+      const isOccupied = this.getEntityAtPosition(newPos) !== undefined;
+
+      if (isWalkable && !isOccupied) {
+        // Path is clear, move the entity
+        entity.position = newPos;
+      } else {
+        // Path is blocked, trigger bumping
+        this.handleEntityBump(entity, newPos);
       }
     }
+  }
+
+  private handleEntityBump(entity: Mobile, targetPos: Vector2) {
+    // Bump into entities
+    const targetEntity = this.getEntityAtPosition(targetPos);
+    if (targetEntity) {
+      // Attack if the entity is adjacent
+      const result = meleeAttack(entity, targetEntity);
+      const color = result.hit ? COLORS.RED : COLORS.LIGHT_GRAY;
+      this.showMessage(result.message, color);
+      if (result.killingBlow) {
+        this.killEntity(targetEntity);
+      }
+      return;
+    }
+
+    // Bump into door
+    const tile = this.tiles[targetPos.x]?.[targetPos.y];
+    if (tile && tile.id === "door") {
+      this.openDoor(tile);
+      return;
+    }
+
+    // Bump into wall or other non-walkable tile, do nothing
   }
 
   private getEntityAtPosition(position: Vector2): Mobile | undefined {
@@ -374,7 +395,7 @@ export class GameState {
       // Main menu
       if (this.menuSelect === 1) {
         // Inventory
-        const inventoryItems = this.getInventoryItems();
+        const inventoryItems = this.player.items;
         const itemNames = inventoryItems.map((itemStack) => itemStack.object.name);
         this.menus.push({
           positionX: 3,
@@ -394,7 +415,7 @@ export class GameState {
       }
     } else if (currentMenu.action === 2) {
       // Inventory item selected
-      const inventoryItems = this.getInventoryItems();
+      const inventoryItems = this.player.items;
       if (inventoryItems.length > 0) {
         this.selectedItemIndex = this.menuSelect - 1;
         this.menuSelect = 1;
@@ -419,7 +440,7 @@ export class GameState {
       }
     } else if (currentMenu.action === 3) {
       // Inventory item action selected
-      const inventoryItems = this.getInventoryItems();
+      const inventoryItems = this.player.items;
       const selectedItem = inventoryItems[this.selectedItemIndex];
       if (!selectedItem) return;
 
@@ -437,6 +458,12 @@ export class GameState {
       }
       this.mode = "game";
     }
+  }
+
+  private removeItemSelected() {
+    const inventoryItems = this.player.items;
+    inventoryItems.splice(this.selectedItemIndex, 1);
+    this.selectedItemIndex = Math.max(0, this.selectedItemIndex - 1);
   }
 
   private useItem(item: ItemStack) {
@@ -458,7 +485,7 @@ export class GameState {
         this.modStatistic(this.player.mp, undefined, magicAmount);
       }
       // Remove the item from inventory after use
-      this.getInventoryItems().splice(this.selectedItemIndex, 1);
+      this.removeItemSelected();
       this.showMessage(`drank the ${item.object.name}`, item.object.color);
     }
   }
@@ -471,7 +498,7 @@ export class GameState {
     item.itemData.position = { ...this.player.position };
     item.itemData.seen = true;
     this.items.push(item);
-    this.getInventoryItems().splice(this.selectedItemIndex, 1);
+    this.removeItemSelected();
     this.showMessage(`dropped the ${item.object.name}`);
   }
 
