@@ -4,14 +4,16 @@ import type { Message } from "./types";
 export class MessageLog {
   private messages: Message[] = [];
 
-  // Add a message to the bottom of the message log,
-  // and remove the oldest message if the log exceeds the maximum height
-  public showMessage(text: string, color: string = COLORS.WHITE): void {
-    const message: Message = { text, color };
-    this.messages.push(message);
-    if (this.messages.length > UI.MESSAGE_LOG_HEIGHT) {
+  public showMessage(arg: string | string[], color: string = COLORS.WHITE): void {
+    const lines = Array.isArray(arg) ? arg : [arg];
+    this.messages.push({ lines, color });
+    while (this.messageLineCount() > UI.MESSAGE_LOG_HEIGHT * 2) {
       this.messages.shift();
     }
+  }
+
+  private messageLineCount(): number {
+    return this.messages.reduce((count, message) => count + message.lines.length, 0);
   }
 
   // Clear all messages from the message log

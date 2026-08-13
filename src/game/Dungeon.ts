@@ -247,7 +247,9 @@ export class DungeonGenerator {
     const items: ItemStack[] = [];
     let itemIdCounter = 0; // Counter to ensure unique item IDs
 
-    for (const room of this.rooms) {
+    // Skip the first room (starting room) and place items in subsequent rooms
+    for (let i = 1; i < this.rooms.length; i++) {
+      const room = this.rooms[i];
       if (Math.random() * 100 < DUNGEON.ITEM_RATE) {
         const ix = Math.floor(Math.random() * (room.width - 1)) + room.x1 + 1;
         const iy = Math.floor(Math.random() * (room.height - 1)) + room.y1 + 1;
@@ -285,7 +287,9 @@ export class DungeonGenerator {
     const entities: Mobile[] = [];
     let entityIdCounter = 0; // Counter to ensure unique entity IDs
 
-    for (const room of this.rooms) {
+    // Skip the first room (starting room) and place entities in subsequent rooms
+    for (let i = 1; i < this.rooms.length; i++) {
+      const room = this.rooms[i];
       const entity = this.getRandomEntity();
       for (let i = 0; i < entity.qty; i++) {
         if (Math.random() * 100 < DUNGEON.ENEMY_RATE) {

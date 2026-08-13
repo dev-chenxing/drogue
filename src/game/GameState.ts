@@ -113,7 +113,7 @@ export class GameState {
       return;
     }
 
-    // Check if the new position is walkable, if so, move the player
+    // Check if the new position is walkable and unoccupied, if so, move the player
     if (this.isWalkable(newPos)) {
       this.player.position = newPos;
       updateVisibility(this.player.position, this.tiles);
@@ -146,7 +146,7 @@ export class GameState {
 
   private playerAttack(enemy: Mobile) {
     const result = meleeAttack(this.player, enemy);
-    this.showMessage(result.message, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
+    this.showMessage(result.messages, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
     if (result.killingBlow) {
       this.entityManager.killEntity(enemy);
     }
@@ -207,7 +207,12 @@ export class GameState {
   private isWalkable(position: Vector2): boolean {
     if (!this.tiles[position.x] || !this.tiles[position.x][position.y]) return false;
     const tile = this.tiles[position.x][position.y];
-    return tile.walkable;
+    if (!tile.walkable) return false;
+
+    // Occupied by an enemy
+    if (this.entityManager.getEntityAtPosition(position)) return false;
+
+    return true;
   }
 
   public useItem(item: ItemStack) {
@@ -296,7 +301,7 @@ export class GameState {
     for (const entity of this.entityManager.getEntities()) {
       if (entity.position.x === targetPos.x && entity.position.y === targetPos.y) {
         const result = magicAttack(this.player, entity);
-        this.showMessage(result.message, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
+        this.showMessage(result.messages, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
         if (result.killingBlow) {
           this.entityManager.killEntity(entity);
         }
@@ -313,7 +318,7 @@ export class GameState {
   }
 
   // Messaging system
-  public showMessage(text: string, color = "white") {
-    this.msgLog.showMessage(text, color);
+  public showMessage(textOrLines: string | string[], color = "white") {
+    this.msgLog.showMessage(textOrLines, color);
   }
 }

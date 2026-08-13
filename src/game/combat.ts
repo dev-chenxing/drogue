@@ -7,7 +7,7 @@ export interface AttackResult {
   attacker: Mobile; // The mobile making the attack
   target: Mobile; // The mobile being attacked
   killingBlow: boolean; // If true, the target was killed by this attack
-  message: string;
+  messages: string[];
 }
 
 // Effective dexterity (to-hit)
@@ -55,24 +55,24 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
   }
 
   const killingBlow = target.hp.current <= 0;
+  let messages = [];
 
-  let message = "";
   if (hit) {
     if (attacker.id === "player") {
-      message = `hit the ${target.name} for ${damage} damage.`;
+      messages.push(`hit the ${target.name} for ${damage} damage.`);
     } else {
-      message = `the ${attacker.name} hits for ${damage} damage.`;
+      messages.push(`the ${attacker.name} hits for ${damage} damage.`);
     }
   } else {
     if (attacker.id === "player") {
-      message = `missed the ${target.name}.`;
+      messages.push(`missed the ${target.name}.`);
     } else {
-      message = `the ${attacker.name} misses.`;
+      messages.push(`the ${attacker.name} misses.`);
     }
   }
 
   if (killingBlow) {
-    message += `\n - the ${target.name} is slain!`;
+    messages.push(`the ${target.name} is slain!`);
   }
 
   return {
@@ -81,7 +81,7 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
     attacker,
     target,
     killingBlow,
-    message,
+    messages,
   };
 }
 
@@ -92,9 +92,10 @@ export function magicAttack(attacker: Mobile, target: Mobile): AttackResult {
   target.hp.current = Math.max(target.hp.currentRaw, 0);
   const killingBlow = target.hp.current <= 0;
 
-  const message =
-    `zapped the ${target.name} for ${damage} damage` +
-    (killingBlow ? ` - the ${target.name} is slain!` : "");
+  const messages = [`zapped the ${target.name} for ${damage} damage`];
+  if (killingBlow) {
+    messages.push(`the ${target.name} is slain!`);
+  }
 
   return {
     hit: true,
@@ -102,7 +103,7 @@ export function magicAttack(attacker: Mobile, target: Mobile): AttackResult {
     attacker,
     target,
     killingBlow,
-    message,
+    messages,
   };
 }
 

@@ -117,7 +117,7 @@ export interface Armor extends Item {
 }
 
 export interface Message {
-  text: string;
+  lines: string[];
   color: string;
 }
 

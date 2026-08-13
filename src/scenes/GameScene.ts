@@ -7,8 +7,10 @@ import { drawText, hexToColor } from "../game/draw";
 
 export class GameScene extends Phaser.Scene {
   private gameState!: GameState;
-  private textObjects: Phaser.GameObjects.Text[] = [];
   private graphics!: Phaser.GameObjects.Graphics;
+
+  private textObjects: Phaser.GameObjects.Text[] = [];
+  private messageTextObjects: Phaser.GameObjects.Text[] = []; // Pre-allocated text objects for messages
 
   // Keys
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -25,6 +27,13 @@ export class GameScene extends Phaser.Scene {
     this.gameState = new GameState();
     this.graphics = this.add.graphics();
 
+    // Pre-allocate text objects for the maximum number of messages and UI elements
+    for (let i = 0; i < UI.MESSAGE_LOG_HEIGHT; i++) {
+      const textObj = drawText(this, 0, 0, "", COLORS.WHITE);
+      textObj.setVisible(false); // Initially hide the text objects
+      this.messageTextObjects.push(textObj);
+    }
+
     // Input handling
     this.cursorKeys = this.input.keyboard!.createCursorKeys();
     this.keyO = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.O);
@@ -39,6 +48,14 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard!.on("keydown-ESC", () => {
       this.scene.start("MenuScene");
     });
+  }
+
+  shutdown() {
+    // Destroy all text objects before scene shutdown
+    this.textObjects.forEach((textObj) => textObj.destroy());
+    this.textObjects = [];
+    this.messageTextObjects.forEach((textObj) => textObj.destroy());
+    this.messageTextObjects = [];
   }
 
   update(_time: number, delta: number) {
@@ -62,6 +79,7 @@ export class GameScene extends Phaser.Scene {
           this.gameState.depth,
         );
         this.scene.start("MenuScene");
+        return; // Exit early to avoid rendering after scene change
       }
     }
     this.render();
@@ -70,19 +88,23 @@ export class GameScene extends Phaser.Scene {
   private handleGameInput() {
     // Movement input
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.left))
-      this.gameState.handleMove({ x: -1, y: 0 });
+      return this.gameState.handleMove({ x: -1, y: 0 });
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.right))
-      this.gameState.handleMove({ x: 1, y: 0 });
+      return this.gameState.handleMove({ x: 1, y: 0 });
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.up))
-      this.gameState.handleMove({ x: 0, y: -1 });
+      return this.gameState.handleMove({ x: 0, y: -1 });
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
-      this.gameState.handleMove({ x: 0, y: 1 });
+      return this.gameState.handleMove({ x: 0, y: 1 });
 
     // WASD movement input
-    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.W)) this.gameState.handleMove({ x: 0, y: -1 });
-    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.A)) this.gameState.handleMove({ x: -1, y: 0 });
-    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.S)) this.gameState.handleMove({ x: 0, y: 1 });
-    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.D)) this.gameState.handleMove({ x: 1, y: 0 });
+    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.W))
+      return this.gameState.handleMove({ x: 0, y: -1 });
+    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.A))
+      return this.gameState.handleMove({ x: -1, y: 0 });
+    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.S))
+      return this.gameState.handleMove({ x: 0, y: 1 });
+    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.D))
+      return this.gameState.handleMove({ x: 1, y: 0 });
 
     // O = Open menu
     if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.menuManager.openMenu();
@@ -123,8 +145,8 @@ export class GameScene extends Phaser.Scene {
 
   private render() {
     // Clear all previous text objects
-    this.textObjects.forEach((t) => t.destroy());
-    this.textObjects = [];
+    for (const textObj of this.textObjects) textObj.destroy();
+    this.textObjects.length = 0; // Clear the array
     this.graphics.clear();
 
     if (this.gameState.showMap) {
@@ -136,7 +158,6 @@ export class GameScene extends Phaser.Scene {
 
       if (this.gameState.mode === "inventory") this.renderMenus();
       if (this.gameState.showCursor) this.renderTargetCursor();
-      if (this.gameState.gameOver) this.renderGameOver();
     }
   }
 
@@ -164,6 +185,28 @@ export class GameScene extends Phaser.Scene {
           this.textObjects.push(drawText(this, screenX, screenY, tile.character, COLORS.DARK_BLUE));
         }
         // else: not seen, do not draw anything (black background)
+      }
+    }
+
+    // Draw items
+    const items = this.gameState.itemManager.getItems();
+    for (const item of items) {
+      const itemPos = item.itemData.position;
+      if (!isVisible(playerPos, itemPos, tiles)) continue; // Skip items not visible to the player
+
+      const viewX = itemPos.x - playerPos.x + Math.floor(UI.VIEWPORT_WIDTH / 2);
+      const viewY = itemPos.y - playerPos.y + Math.floor(UI.VIEWPORT_HEIGHT / 2);
+
+      if (viewX >= 0 && viewX < UI.VIEWPORT_WIDTH && viewY >= 0 && viewY < UI.VIEWPORT_HEIGHT) {
+        this.textObjects.push(
+          drawText(
+            this,
+            viewX * UI.CHAR_WIDTH,
+            viewY * UI.CHAR_HEIGHT,
+            item.object.tile,
+            item.object.color,
+          ),
+        );
       }
     }
 
@@ -277,10 +320,10 @@ export class GameScene extends Phaser.Scene {
         ? player.weapon.object.name + " [x]"
         : player.weapon.object.name
       : "bare fists";
-    this.textObjects.push(drawText(this, startX, currentY, weaponName, COLORS.DARK_GRAY));
+    this.textObjects.push(drawText(this, startX, currentY, weaponName, COLORS.LIGHT_GRAY));
     currentY += UI.CHAR_HEIGHT;
     const armorName = player.armor ? player.armor.object.name : "clothes";
-    this.textObjects.push(drawText(this, startX, currentY, armorName, COLORS.DARK_GRAY));
+    this.textObjects.push(drawText(this, startX, currentY, armorName, COLORS.LIGHT_GRAY));
     currentY += UI.CHAR_HEIGHT;
 
     // started from 8th row: Visible enemy list
@@ -312,13 +355,30 @@ export class GameScene extends Phaser.Scene {
   }
 
   private renderMessages() {
-    const messages = this.gameState.msgLog.getMessages();
     const startY = UI.VIEWPORT_HEIGHT * UI.CHAR_HEIGHT; // Start drawing below the game view
 
-    for (let i = 0; i < messages.length; i++) {
-      this.textObjects.push(
-        drawText(this, 0, startY + i * UI.CHAR_HEIGHT, messages[i].text, messages[i].color),
-      );
+    // Wipe all message text objects first
+    for (const txt of this.messageTextObjects) {
+      txt.setText("");
+      txt.setVisible(false);
+    }
+
+    const messages = this.gameState.msgLog.getMessages();
+    let drawIndex = UI.MESSAGE_LOG_HEIGHT - 1; // Start drawing from the bottom of the message log
+    for (let i = messages.length - 1; i >= 0 && drawIndex >= 0; i--) {
+      const msg = messages[i];
+      for (
+        let lineIndex = msg.lines.length - 1;
+        lineIndex >= 0 && drawIndex >= 0;
+        lineIndex--, drawIndex--
+      ) {
+        const line = msg.lines[lineIndex];
+        const txt = this.messageTextObjects[drawIndex];
+        txt.setText(line ?? "");
+        txt.setColor(msg.color ?? COLORS.WHITE);
+        txt.setPosition(0, startY + drawIndex * UI.CHAR_HEIGHT);
+        txt.setVisible(true);
+      }
     }
   }
 
@@ -421,42 +481,6 @@ export class GameScene extends Phaser.Scene {
     const weaponColor = this.gameState.player.weapon?.object.color || COLORS.WHITE;
     this.graphics.fillStyle(hexToColor(weaponColor));
     this.graphics.fillRect(cursorPosX, cursorPosY, UI.CHAR_WIDTH, UI.CHAR_HEIGHT - 2);
-  }
-
-  private renderGameOver() {
-    const cx = this.scale.width / 2;
-    const cy = this.scale.height / 2;
-
-    // Dark overlay
-    this.graphics.fillStyle(hexToColor(COLORS.BLACK), 0.7);
-    this.graphics.fillRect(0, 0, this.scale.width, this.scale.height);
-
-    const title = this.gameState.victory ? "VICTORY!" : "YOU ARE DEAD";
-    const color = this.gameState.victory ? COLORS.GREEN : COLORS.RED;
-
-    this.textObjects.push(drawText(this, cx, cy - UI.CHAR_HEIGHT * 2, title, color, true));
-
-    this.textObjects.push(
-      drawText(
-        this,
-        cx,
-        cy,
-        `Score: ${this.gameState.score} Floor: ${this.gameState.depth}`,
-        COLORS.WHITE,
-        true,
-      ),
-    );
-
-    this.textObjects.push(
-      drawText(
-        this,
-        cx,
-        cy + UI.CHAR_HEIGHT * 2,
-        "Press SPACE to continue",
-        COLORS.LIGHT_GRAY,
-        true,
-      ),
-    );
   }
 
   private drawLine(x1: number, y1: number, x2: number, y2: number, color: string) {

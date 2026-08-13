@@ -25,28 +25,31 @@ export class AISystem {
 
     // Set the starting position distance to 0
     this.distanceMap[start.x][start.y].distance = 0;
-    const candidates: Vector2[] = [start];
+    let candidates: Vector2[] = [start];
     let step = 0;
 
     while (candidates.length > 0) {
-      const current = candidates.shift()!;
       step++;
       const newCandidates: Vector2[] = [];
-      for (const dir of DIRECTIONS) {
-        const neighborX = current.x + dir.x;
-        const neighborY = current.y + dir.y;
 
-        if (neighborX >= 0 && neighborX < size && neighborY >= 0 && neighborY < size) {
-          if (
-            this.distanceMap[neighborX][neighborY].distance === Infinity &&
-            this.isWalkable(neighborX, neighborY, tiles, entities)
-          ) {
-            this.distanceMap[neighborX][neighborY].distance = step;
-            newCandidates.push({ x: neighborX, y: neighborY });
+      for (const current of candidates) {
+        for (const dir of DIRECTIONS) {
+          const neighborX = current.x + dir.x;
+          const neighborY = current.y + dir.y;
+
+          if (neighborX >= 0 && neighborX < size && neighborY >= 0 && neighborY < size) {
+            if (
+              this.distanceMap[neighborX][neighborY].distance === Infinity &&
+              this.isWalkable(neighborX, neighborY, tiles, entities)
+            ) {
+              this.distanceMap[neighborX][neighborY].distance = step;
+              newCandidates.push({ x: neighborX, y: neighborY });
+            }
           }
         }
       }
-      candidates.push(...newCandidates);
+
+      candidates = newCandidates;
     }
   }
 
@@ -64,7 +67,7 @@ export class AISystem {
     return true;
   }
 
-  public getNextStep(entity: Mobile): { dx: number; dy: number } {
+  public getNextStep(entity: Mobile): { dx: number; dy: number } | null {
     let lowestDistance = Infinity;
     let bestStep = { dx: 0, dy: 0 };
 
@@ -74,13 +77,14 @@ export class AISystem {
 
       if (this.distanceMap[neighborX] && this.distanceMap[neighborX][neighborY]) {
         const neighborDistance = this.distanceMap[neighborX][neighborY].distance;
-        if (neighborDistance < lowestDistance) {
+        if (neighborDistance <= lowestDistance) {
           lowestDistance = neighborDistance;
           bestStep = { dx: dir.x, dy: dir.y };
         }
       }
     }
-    return bestStep;
+
+    return Number.isFinite(lowestDistance) ? bestStep : null;
   }
 
   public getDistance(x: number, y: number): number {
@@ -106,13 +110,15 @@ export class AISystem {
 
       // Find the closest path to the player and move towards them if not adjacent
       const step = this.getNextStep(entity);
+      if (!step) continue;
+
       const newPos = { x: entity.position.x + step.dx, y: entity.position.y + step.dy };
 
-      // Check if the new position is walkable and not occupied by another entity
+      // Check if the new position is walkable and does not contain the player
       const isWalkable = this.isWalkable(newPos.x, newPos.y, tiles, entities);
-      const isOccupied = gameState.entityManager.getEntityAtPosition(newPos) !== null;
+      const isPlayerTile = player.position.x === newPos.x && player.position.y === newPos.y;
 
-      if (isWalkable && !isOccupied) {
+      if (isWalkable && !isPlayerTile) {
         // Path is clear, move the entity
         entity.position = newPos;
       } else {
@@ -123,13 +129,24 @@ export class AISystem {
   }
 
   private handleEntityBump(entity: Mobile, targetPos: Vector2, gameState: GameState) {
+    // Bump into player
+    if (
+      gameState.player.position.x === targetPos.x &&
+      gameState.player.position.y === targetPos.y
+    ) {
+      const result = meleeAttack(entity, gameState.player);
+      const color = result.hit ? COLORS.RED : COLORS.LIGHT_GRAY;
+      gameState.showMessage(result.messages, color);
+      return;
+    }
+
     // Bump into entities
     const targetEntity = gameState.entityManager.getEntityAtPosition(targetPos);
     if (targetEntity) {
       // Attack if the entity is adjacent
       const result = meleeAttack(entity, targetEntity);
       const color = result.hit ? COLORS.RED : COLORS.LIGHT_GRAY;
-      gameState.showMessage(result.message, color);
+      gameState.showMessage(result.messages, color);
       if (result.killingBlow) {
         gameState.entityManager.killEntity(targetEntity);
       }
