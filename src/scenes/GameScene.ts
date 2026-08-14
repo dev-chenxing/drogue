@@ -8,8 +8,10 @@ import { drawText, hexToColor } from "../game/draw";
 export class GameScene extends Phaser.Scene {
   private gameState!: GameState;
   private graphics!: Phaser.GameObjects.Graphics;
+  private menuBackgroundLayers: Phaser.GameObjects.Graphics[] = [];
 
-  private textObjects: Phaser.GameObjects.Text[] = [];
+  private frameTextObjects: Phaser.GameObjects.Text[] = [];
+  private frameTextCount = 0;
   private messageTextObjects: Phaser.GameObjects.Text[] = []; // Pre-allocated text objects for messages
 
   // Keys
@@ -17,6 +19,9 @@ export class GameScene extends Phaser.Scene {
   private keyO!: Phaser.Input.Keyboard.Key;
   private keyX!: Phaser.Input.Keyboard.Key;
   private keyWASD!: { [key: string]: Phaser.Input.Keyboard.Key };
+  private onEscKeyDown = () => {
+    this.scene.start("MenuScene");
+  };
 
   constructor() {
     super({ key: "GameScene" });
@@ -26,10 +31,12 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.BLACK);
     this.gameState = new GameState();
     this.graphics = this.add.graphics();
+    this.graphics.setDepth(1);
 
-    // Pre-allocate text objects for the maximum number of messages and UI elements
+    // Pre-allocate text objects for message area (retained layer)
     for (let i = 0; i < UI.MESSAGE_LOG_HEIGHT; i++) {
       const textObj = drawText(this, 0, 0, "", COLORS.WHITE);
+      textObj.setDepth(3);
       textObj.setVisible(false); // Initially hide the text objects
       this.messageTextObjects.push(textObj);
     }
@@ -45,17 +52,21 @@ export class GameScene extends Phaser.Scene {
       D: Phaser.Input.Keyboard.KeyCodes.D,
     }) as { [key: string]: Phaser.Input.Keyboard.Key };
 
-    this.input.keyboard!.on("keydown-ESC", () => {
-      this.scene.start("MenuScene");
-    });
+    this.input.keyboard!.on("keydown-ESC", this.onEscKeyDown);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.shutdown());
   }
 
   shutdown() {
+    this.input.keyboard?.off("keydown-ESC", this.onEscKeyDown);
+
     // Destroy all text objects before scene shutdown
-    this.textObjects.forEach((textObj) => textObj.destroy());
-    this.textObjects = [];
+    this.frameTextObjects.forEach((textObj) => textObj.destroy());
+    this.frameTextObjects = [];
+    this.frameTextCount = 0;
     this.messageTextObjects.forEach((textObj) => textObj.destroy());
     this.messageTextObjects = [];
+    this.menuBackgroundLayers.forEach((layer) => layer.destroy());
+    this.menuBackgroundLayers = [];
   }
 
   update(_time: number, delta: number) {
@@ -140,25 +151,59 @@ export class GameScene extends Phaser.Scene {
       this.gameState.moveTargetCursor({ x: 0, y: -1 });
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
       this.gameState.moveTargetCursor({ x: 0, y: 1 });
+    if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.fireWand();
     if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.exitTargetingMode();
   }
 
   private render() {
-    // Clear all previous text objects
-    for (const textObj of this.textObjects) textObj.destroy();
-    this.textObjects.length = 0; // Clear the array
+    this.beginFrame();
     this.graphics.clear();
+    for (const layer of this.menuBackgroundLayers) {
+      layer.clear();
+    }
 
+    // PICO-8 show_map() clears the screen and draws map only.
     if (this.gameState.showMap) {
       this.renderMap();
-    } else {
-      this.renderGameView();
-      this.renderSidebar();
-      this.renderMessages();
-
-      if (this.gameState.mode === "inventory") this.renderMenus();
-      if (this.gameState.showCursor) this.renderTargetCursor();
+      return;
     }
+
+    // PICO-8 draw_game() layer order:
+    // draw_bg + draw_items + draw_ents -> draw_curs -> draw_bottom -> draw_sidebar -> draw_menus
+    this.renderGameView();
+    if (this.gameState.showCursor) this.renderTargetCursor();
+    this.renderMessages();
+    this.renderSidebar();
+    if (this.gameState.mode === "inventory") this.renderMenus();
+  }
+
+  private beginFrame() {
+    for (let i = 0; i < this.frameTextCount; i++) {
+      this.frameTextObjects[i].setVisible(false);
+    }
+    this.frameTextCount = 0;
+  }
+
+  private drawFrameText(
+    x: number,
+    y: number,
+    text: string,
+    color: string,
+    depth: number = 2,
+  ): Phaser.GameObjects.Text {
+    if (this.frameTextCount >= this.frameTextObjects.length) {
+      const textObj = drawText(this, x, y, text, color);
+      textObj.setDepth(depth);
+      this.frameTextObjects.push(textObj);
+    }
+
+    const textObj = this.frameTextObjects[this.frameTextCount++];
+    textObj.setText(text);
+    textObj.setColor(color);
+    textObj.setDepth(depth);
+    textObj.setPosition(x, y);
+    textObj.setVisible(true);
+    return textObj;
   }
 
   private renderGameView() {
@@ -179,10 +224,10 @@ export class GameScene extends Phaser.Scene {
 
         if (isVisible(playerPos, { x: tileX, y: tileY }, tiles)) {
           // Currently visible tile - full brightness
-          this.textObjects.push(drawText(this, screenX, screenY, tile.character, tile.color));
+          this.drawFrameText(screenX, screenY, tile.character, tile.color);
         } else if (tile.seen) {
           // Explored but not currently visible - dark blue color
-          this.textObjects.push(drawText(this, screenX, screenY, tile.character, COLORS.DARK_BLUE));
+          this.drawFrameText(screenX, screenY, tile.character, COLORS.DARK_BLUE);
         }
         // else: not seen, do not draw anything (black background)
       }
@@ -198,14 +243,11 @@ export class GameScene extends Phaser.Scene {
       const viewY = itemPos.y - playerPos.y + Math.floor(UI.VIEWPORT_HEIGHT / 2);
 
       if (viewX >= 0 && viewX < UI.VIEWPORT_WIDTH && viewY >= 0 && viewY < UI.VIEWPORT_HEIGHT) {
-        this.textObjects.push(
-          drawText(
-            this,
-            viewX * UI.CHAR_WIDTH,
-            viewY * UI.CHAR_HEIGHT,
-            item.object.tile,
-            item.object.color,
-          ),
+        this.drawFrameText(
+          viewX * UI.CHAR_WIDTH,
+          viewY * UI.CHAR_HEIGHT,
+          item.object.tile,
+          item.object.color,
         );
       }
     }
@@ -216,28 +258,22 @@ export class GameScene extends Phaser.Scene {
         const viewX = entity.position.x - playerPos.x + Math.floor(UI.VIEWPORT_WIDTH / 2);
         const viewY = entity.position.y - playerPos.y + Math.floor(UI.VIEWPORT_HEIGHT / 2);
         if (viewX >= 0 && viewX < UI.VIEWPORT_WIDTH && viewY >= 0 && viewY < UI.VIEWPORT_HEIGHT) {
-          this.textObjects.push(
-            drawText(
-              this,
-              viewX * UI.CHAR_WIDTH,
-              viewY * UI.CHAR_HEIGHT,
-              entity.tile,
-              entity.color,
-            ),
+          this.drawFrameText(
+            viewX * UI.CHAR_WIDTH,
+            viewY * UI.CHAR_HEIGHT,
+            entity.tile,
+            entity.color,
           );
         }
       }
     }
 
     // Draw player
-    this.textObjects.push(
-      drawText(
-        this,
-        Math.floor(UI.VIEWPORT_WIDTH / 2) * UI.CHAR_WIDTH,
-        Math.floor(UI.VIEWPORT_HEIGHT / 2) * UI.CHAR_HEIGHT,
-        this.gameState.player.tile,
-        this.gameState.player.color,
-      ),
+    this.drawFrameText(
+      Math.floor(UI.VIEWPORT_WIDTH / 2) * UI.CHAR_WIDTH,
+      Math.floor(UI.VIEWPORT_HEIGHT / 2) * UI.CHAR_HEIGHT,
+      this.gameState.player.tile,
+      this.gameState.player.color,
     );
   }
 
@@ -247,71 +283,54 @@ export class GameScene extends Phaser.Scene {
     let currentY = 0;
 
     // 0th row:　Level and Floor
-    this.textObjects.push(
-      drawText(
-        this,
-        startX,
-        currentY,
-        `level ${player.floor}  floor ${this.gameState.depth}`,
-        COLORS.WHITE,
-      ),
+    this.drawFrameText(
+      startX,
+      currentY,
+      `level ${player.floor}  floor ${this.gameState.depth}`,
+      COLORS.WHITE,
     );
     currentY += UI.CHAR_HEIGHT;
 
     // 1st row: XP + Gold
-    this.textObjects.push(drawText(this, startX, currentY, `xp ${player.xp}`, COLORS.LAVENDER));
-    this.textObjects.push(
-      drawText(this, startX + 9 * UI.CHAR_WIDTH, currentY, `$$ ${player.gold}`, COLORS.YELLOW),
-    );
+    this.drawFrameText(startX, currentY, `xp ${player.xp}`, COLORS.LAVENDER);
+    this.drawFrameText(startX + 9 * UI.CHAR_WIDTH, currentY, `$$ ${player.gold}`, COLORS.YELLOW);
     currentY += UI.CHAR_HEIGHT;
 
     // 2nd row: HP + MP
-    this.textObjects.push(
-      drawText(
-        this,
-        startX,
-        currentY,
-        `hp ${player.hp.current}/${player.hp.base}`,
-        hpColor(player),
-      ),
+    this.drawFrameText(
+      startX,
+      currentY,
+      `hp ${player.hp.current}/${player.hp.base}`,
+      hpColor(player),
     );
-    this.textObjects.push(
-      drawText(
-        this,
-        startX + 9 * UI.CHAR_WIDTH,
-        currentY,
-        `mp ${player.mp.current}/${player.mp.base}`,
-        mpColor(player),
-      ),
+    this.drawFrameText(
+      startX + 9 * UI.CHAR_WIDTH,
+      currentY,
+      `mp ${player.mp.current}/${player.mp.base}`,
+      mpColor(player),
     );
     currentY += UI.CHAR_HEIGHT;
 
     // 3rd row: ST / DX / IN
-    this.textObjects.push(
-      drawText(this, startX, currentY, `st ${player.st.current}`, COLORS.WHITE),
+    this.drawFrameText(startX, currentY, `st ${player.st.current}`, COLORS.WHITE);
+    this.drawFrameText(
+      startX + 6 * UI.CHAR_WIDTH,
+      currentY,
+      `dx ${player.dx.current}`,
+      COLORS.WHITE,
     );
-    this.textObjects.push(
-      drawText(this, startX + 6 * UI.CHAR_WIDTH, currentY, `dx ${player.dx.current}`, COLORS.WHITE),
-    );
-    this.textObjects.push(
-      drawText(
-        this,
-        startX + 12 * UI.CHAR_WIDTH,
-        currentY,
-        `in ${player.int.current}`,
-        COLORS.WHITE,
-      ),
+    this.drawFrameText(
+      startX + 12 * UI.CHAR_WIDTH,
+      currentY,
+      `in ${player.int.current}`,
+      COLORS.WHITE,
     );
     currentY += UI.CHAR_HEIGHT;
 
     // 4th row: DM / EV / AC
-    this.textObjects.push(drawText(this, startX, currentY, `dm ${eDmg(player)}`, COLORS.WHITE));
-    this.textObjects.push(
-      drawText(this, startX + 6 * UI.CHAR_WIDTH, currentY, `ev ${eEv(player)}`, COLORS.WHITE),
-    );
-    this.textObjects.push(
-      drawText(this, startX + 12 * UI.CHAR_WIDTH, currentY, `ac ${eAc(player)}`, COLORS.WHITE),
-    );
+    this.drawFrameText(startX, currentY, `dm ${eDmg(player)}`, COLORS.WHITE);
+    this.drawFrameText(startX + 6 * UI.CHAR_WIDTH, currentY, `ev ${eEv(player)}`, COLORS.WHITE);
+    this.drawFrameText(startX + 12 * UI.CHAR_WIDTH, currentY, `ac ${eAc(player)}`, COLORS.WHITE);
     currentY += UI.CHAR_HEIGHT;
 
     // 5th-6th rows: Weapon / Armor
@@ -320,10 +339,10 @@ export class GameScene extends Phaser.Scene {
         ? player.weapon.object.name + " [x]"
         : player.weapon.object.name
       : "bare fists";
-    this.textObjects.push(drawText(this, startX, currentY, weaponName, COLORS.LIGHT_GRAY));
+    this.drawFrameText(startX, currentY, weaponName, COLORS.LIGHT_GRAY);
     currentY += UI.CHAR_HEIGHT;
     const armorName = player.armor ? player.armor.object.name : "clothes";
-    this.textObjects.push(drawText(this, startX, currentY, armorName, COLORS.LIGHT_GRAY));
+    this.drawFrameText(startX, currentY, armorName, COLORS.LIGHT_GRAY);
     currentY += UI.CHAR_HEIGHT;
 
     // started from 8th row: Visible enemy list
@@ -348,8 +367,8 @@ export class GameScene extends Phaser.Scene {
 
       const x = startX + column * 9 * UI.CHAR_WIDTH;
       const y = startY + row * UI.CHAR_HEIGHT;
-      this.textObjects.push(drawText(this, x, y, "*", hpColor(enemy)));
-      this.textObjects.push(drawText(this, x + UI.CHAR_WIDTH, y, enemy.name, enemy.color));
+      this.drawFrameText(x, y, "*", hpColor(enemy));
+      this.drawFrameText(x + UI.CHAR_WIDTH, y, enemy.name, enemy.color);
       row++;
     }
   }
@@ -386,36 +405,89 @@ export class GameScene extends Phaser.Scene {
     const menus = this.gameState.menuManager.getMenus();
     const blink = this.gameState.getBlinkState();
 
-    for (const menu of menus) {
+    for (let menuIndex = 0; menuIndex < menus.length; menuIndex++) {
+      const menu = menus[menuIndex];
       const isTop = menu === menus[menus.length - 1];
-      const posX = menu.positionX * UI.CHAR_WIDTH;
-      const posY = menu.positionY * UI.CHAR_HEIGHT;
-      const width = menu.width * UI.CHAR_WIDTH;
-      const height = menu.height * UI.CHAR_HEIGHT;
+      const menuBackgroundDepth = 4 + menuIndex * 2;
+      const menuTextDepth = 5 + menuIndex * 2;
 
-      // Draw menu background (black rectangle)
-      this.graphics.fillStyle(hexToColor(COLORS.BLACK));
-      this.graphics.fillRect(posX, posY, width + UI.CHAR_WIDTH, height + UI.CHAR_HEIGHT);
+      if (!this.menuBackgroundLayers[menuIndex]) {
+        this.menuBackgroundLayers[menuIndex] = this.add.graphics();
+      }
+      const menuBackground = this.menuBackgroundLayers[menuIndex];
+      menuBackground.setDepth(menuBackgroundDepth);
+      menuBackground.clear();
 
-      // Draw menu border
-      this.graphics.lineStyle(1, hexToColor(COLORS.WHITE));
-      this.graphics.strokeRect(posX, posY, width + UI.CHAR_WIDTH, height + UI.CHAR_HEIGHT);
+      // Fill interior with black background
+      menuBackground.fillStyle(hexToColor(COLORS.BLACK));
+      menuBackground.fillRect(
+        menu.positionX * UI.CHAR_WIDTH,
+        menu.positionY * UI.CHAR_HEIGHT,
+        (menu.width + 1) * UI.CHAR_WIDTH,
+        (menu.height + 1) * UI.CHAR_HEIGHT,
+      );
+
+      // Draw vertical | borders (left & right tile columns)
+      for (let ty = menu.positionY + 1; ty <= menu.positionY + menu.height - 1; ty++) {
+        this.drawFrameText(
+          menu.positionX * UI.CHAR_WIDTH,
+          ty * UI.CHAR_HEIGHT,
+          "|",
+          COLORS.WHITE,
+          menuTextDepth,
+        );
+        this.drawFrameText(
+          (menu.positionX + menu.width) * UI.CHAR_WIDTH,
+          ty * UI.CHAR_HEIGHT,
+          "|",
+          COLORS.WHITE,
+          menuTextDepth,
+        );
+      }
+
+      // Draw horizontal - borders (top & bottom tile rows)
+      for (let tx = menu.positionX; tx <= menu.positionX + menu.width; tx++) {
+        this.drawFrameText(
+          tx * UI.CHAR_WIDTH,
+          menu.positionY * UI.CHAR_HEIGHT,
+          "-",
+          COLORS.WHITE,
+          menuTextDepth,
+        );
+        this.drawFrameText(
+          tx * UI.CHAR_WIDTH,
+          (menu.positionY + menu.height) * UI.CHAR_HEIGHT,
+          "-",
+          COLORS.WHITE,
+          menuTextDepth,
+        );
+      }
+
+      // Draw title line when present (PICO-8 menu title behavior)
+      if (menu.title) {
+        this.drawFrameText(
+          (menu.positionX + 2) * UI.CHAR_WIDTH,
+          (menu.positionY + 1) * UI.CHAR_HEIGHT,
+          menu.title,
+          COLORS.WHITE,
+          menuTextDepth,
+        );
+      }
 
       // Draw options
       for (let i = 0; i < menu.options.length; i++) {
-        const optionY = posY + (i + 1) * UI.CHAR_HEIGHT;
+        // PICO-8 options start one row below the title line.
+        const optionY = menu.positionY + 2 + i;
+        const textX = (menu.positionX + 2) * UI.CHAR_WIDTH;
+        const textY = optionY * UI.CHAR_HEIGHT;
         const isSelected = isTop && i + 1 === this.gameState.menuManager.getMenuSelect();
         const prefix = isSelected && blink ? ">" : " ";
-        this.textObjects.push(
-          drawText(
-            this,
-            posX + UI.CHAR_WIDTH,
-            optionY,
-            prefix + menu.options[i],
-            isSelected ? COLORS.YELLOW : COLORS.WHITE,
-          ),
-        );
+        this.drawFrameText(textX, textY, prefix + menu.options[i], COLORS.WHITE, menuTextDepth);
       }
+    }
+
+    for (let i = menus.length; i < this.menuBackgroundLayers.length; i++) {
+      this.menuBackgroundLayers[i].clear();
     }
   }
 
@@ -429,14 +501,11 @@ export class GameScene extends Phaser.Scene {
         const tileY = viewY - UI.MAP_HEIGHT / 2 + camera.y;
 
         if (tiles[tileX] && tiles[tileX][tileY] && tiles[tileX][tileY].seen)
-          this.textObjects.push(
-            drawText(
-              this,
-              viewX * UI.CHAR_WIDTH,
-              viewY * UI.CHAR_HEIGHT,
-              tiles[tileX][tileY].character,
-              COLORS.DARK_BLUE,
-            ),
+          this.drawFrameText(
+            viewX * UI.CHAR_WIDTH,
+            viewY * UI.CHAR_HEIGHT,
+            tiles[tileX][tileY].character,
+            COLORS.DARK_BLUE,
           );
       }
     }
@@ -450,14 +519,11 @@ export class GameScene extends Phaser.Scene {
       playerViewY >= 0 &&
       playerViewY < UI.MAP_HEIGHT
     )
-      this.textObjects.push(
-        drawText(
-          this,
-          playerViewX * UI.CHAR_WIDTH,
-          playerViewY * UI.CHAR_HEIGHT,
-          this.gameState.player.tile,
-          COLORS.WHITE,
-        ),
+      this.drawFrameText(
+        playerViewX * UI.CHAR_WIDTH,
+        playerViewY * UI.CHAR_HEIGHT,
+        this.gameState.player.tile,
+        COLORS.WHITE,
       );
   }
 
@@ -470,8 +536,8 @@ export class GameScene extends Phaser.Scene {
 
     // Draw laser line from player to cursor
     this.drawLine(
-      UI.VIEWPORT_WIDTH / 2,
-      UI.VIEWPORT_HEIGHT / 2,
+      Math.floor(UI.VIEWPORT_WIDTH / 2),
+      Math.floor(UI.VIEWPORT_HEIGHT / 2),
       this.gameState.cursorPosition.x,
       this.gameState.cursorPosition.y,
       COLORS.RED,

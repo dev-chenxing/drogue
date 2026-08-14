@@ -74,6 +74,7 @@ export class MenuManager {
         // Inventory
         const inventoryItems = this.gameState.player.items;
         const itemNames = inventoryItems.map((itemStack) => itemStack.object.name);
+        if (itemNames.length === 0) return; // No items to display
         this.menus.push({
           positionX: 3,
           positionY: 1,

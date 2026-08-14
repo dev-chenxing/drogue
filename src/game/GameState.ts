@@ -1,6 +1,6 @@
 import { AISystem } from "./AISystem";
 import { meleeAttack, magicAttack } from "./combat";
-import { COLORS, DUNGEON } from "./constants/common";
+import { COLORS, DUNGEON, UI } from "./constants/common";
 import { DungeonGenerator } from "./Dungeon";
 import { createMobile, EntityManager, getEntity } from "./Entity";
 import { ItemManager } from "./Item";
@@ -265,15 +265,20 @@ export class GameState {
     if (!this.player.weapon || this.player.weapon.object.zap <= 0) return;
     if (this.player.mp.current < this.player.weapon.object.zap) return;
 
+    const centerX = Math.floor(UI.VIEWPORT_WIDTH / 2);
+    const centerY = Math.floor(UI.VIEWPORT_HEIGHT / 2);
+
     this.mode = "target";
-    this.cursorPosition = { x: 7, y: 7 };
+    this.cursorPosition = { x: centerX, y: centerY };
     this.showCursor = true;
   }
 
   public moveTargetCursor(direction: Vector2) {
+    const centerX = Math.floor(UI.VIEWPORT_WIDTH / 2);
+    const centerY = Math.floor(UI.VIEWPORT_HEIGHT / 2);
     const targetPos = {
-      x: this.cursorPosition.x + this.player.position.x - 7 + direction.x,
-      y: this.cursorPosition.y + this.player.position.y - 7 + direction.y,
+      x: this.cursorPosition.x + this.player.position.x - centerX + direction.x,
+      y: this.cursorPosition.y + this.player.position.y - centerY + direction.y,
     };
 
     if (
@@ -291,11 +296,14 @@ export class GameState {
       return;
     }
 
+    const centerX = Math.floor(UI.VIEWPORT_WIDTH / 2);
+    const centerY = Math.floor(UI.VIEWPORT_HEIGHT / 2);
+
     modStatisticCurrent(this.player.mp, -this.player.weapon.object.zap);
 
     const targetPos = {
-      x: this.cursorPosition.x + this.player.position.x - 7,
-      y: this.cursorPosition.y + this.player.position.y - 7,
+      x: this.cursorPosition.x + this.player.position.x - centerX,
+      y: this.cursorPosition.y + this.player.position.y - centerY,
     };
 
     for (const entity of this.entityManager.getEntities()) {

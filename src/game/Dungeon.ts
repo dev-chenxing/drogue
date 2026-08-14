@@ -42,7 +42,7 @@ export class DungeonGenerator {
     this.generateRooms();
     const stairsPos = this.placeStairsOrOrb();
     const items = this.placeItems();
-    const entities = this.placeEntities();
+    const entities = this.placeEntities(items);
 
     const playerStart = { x: this.rooms[0].cx, y: this.rooms[0].cy };
 
@@ -283,7 +283,7 @@ export class DungeonGenerator {
     return candidates[randomIndex];
   }
 
-  private placeEntities(): Mobile[] {
+  private placeEntities(items: ItemStack[]): Mobile[] {
     const entities: Mobile[] = [];
     let entityIdCounter = 0; // Counter to ensure unique entity IDs
 
@@ -293,13 +293,25 @@ export class DungeonGenerator {
       const entity = this.getRandomEntity();
       for (let i = 0; i < entity.qty; i++) {
         if (Math.random() * 100 < DUNGEON.ENEMY_RATE) {
-          const ex = Math.floor(Math.random() * (room.width - 2)) + room.x1 + 2;
-          const ey = Math.floor(Math.random() * (room.height - 2)) + room.y1 + 2;
+          let ex: number, ey: number;
+          // Reroll position until tile has no items on it
+          let attempts = 0;
+          do {
+            ex = Math.floor(Math.random() * (room.width - 2)) + room.x1 + 2;
+            ey = Math.floor(Math.random() * (room.height - 2)) + room.y1 + 2;
+            attempts++;
+            // Break if we exceed a reasonable number of attempts to avoid infinite loops
+          } while (this.hasItemAt(ex, ey, items) && attempts < 10);
+
           entities.push(createMobile(entity, { x: ex, y: ey }, entityIdCounter++, this.depth));
         }
       }
     }
     return entities;
+  }
+
+  private hasItemAt(x: number, y: number, items: ItemStack[]): boolean {
+    return items.some((item) => item.itemData.position.x === x && item.itemData.position.y === y);
   }
 
   private getRandomEntity(): EntityData {
