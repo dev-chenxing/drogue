@@ -2,6 +2,7 @@ import { COLORS } from "./constants/common";
 import { ITEM_DATA } from "./constants/items";
 import type { GameState } from "./GameState";
 import type { ItemStack, ItemTemplate } from "./types";
+import { isVisible } from "./Vision";
 
 export function getItem(itemId: string): ItemTemplate {
   const item = ITEM_DATA.find((candidate) => candidate.name === itemId);
@@ -46,7 +47,7 @@ export class ItemManager {
         itemStack.itemData.position.x === this.gameState.player.position.x &&
         itemStack.itemData.position.y === this.gameState.player.position.y
       ) {
-        if (itemStack.object.id === "gold") {
+        if (itemStack.object.type === "gold") {
           // Gold is automatically added to the player's gold count
           this.gameState.player.gold += itemStack.itemData.count;
           this.gameState.showMessage(`gained ${itemStack.itemData.count} gold`, COLORS.YELLOW);
@@ -65,6 +66,30 @@ export class ItemManager {
             this.gameState.player.items.push(itemStack);
           }
         }
+      }
+    }
+  }
+
+  public discoverVisibleItems() {
+    const playerPos = this.gameState.player.position;
+    const tiles = this.gameState.tiles;
+
+    for (const itemStack of this.items) {
+      if (itemStack.itemData.seen) continue;
+      if (!isVisible(playerPos, itemStack.itemData.position, tiles)) continue;
+
+      itemStack.itemData.seen = true;
+      if (itemStack.itemData.count > 1) {
+        this.gameState.showMessage(
+          `found ${itemStack.itemData.count} ${itemStack.object.name}`,
+          COLORS.GREEN,
+        );
+      } else {
+        const vowel = this.isVowel(itemStack.object.name[0]);
+        this.gameState.showMessage(
+          `found ${vowel ? "an" : "a"} ${itemStack.object.name}`,
+          COLORS.GREEN,
+        );
       }
     }
   }

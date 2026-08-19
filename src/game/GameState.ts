@@ -86,6 +86,7 @@ export class GameState {
 
     this.player.position = playerStart;
     updateVisibility(this.player.position, this.tiles);
+    this.itemManager.discoverVisibleItems();
   }
 
   public update(deltaTime: number) {
@@ -117,6 +118,7 @@ export class GameState {
     if (this.isWalkable(newPos)) {
       this.player.position = newPos;
       updateVisibility(this.player.position, this.tiles);
+      this.itemManager.discoverVisibleItems();
       this.itemManager.autoPickupItems();
       // Check for stairs
       if (this.tiles[newPos.x][newPos.y].id === "stairs") {
@@ -142,6 +144,9 @@ export class GameState {
     tile.character = ".";
     tile.color = "gray";
     tile.walkable = true;
+
+    updateVisibility(this.player.position, this.tiles);
+    this.itemManager.discoverVisibleItems();
   }
 
   private playerAttack(enemy: Mobile) {
@@ -193,6 +198,9 @@ export class GameState {
 
     // AI turns
     this.aiSystem.processAITurn(this);
+
+    // Items can become visible from combat changes during the turn
+    this.itemManager.discoverVisibleItems();
 
     // Check if the player is dead after the AI turn
     if (this.player.hp.current <= 0) {
