@@ -291,7 +291,7 @@ export class DungeonGenerator {
     for (let i = 1; i < this.rooms.length; i++) {
       const room = this.rooms[i];
       const entity = this.getRandomEntity();
-      for (let i = 0; i < entity.qty; i++) {
+      for (let j = 0; j < entity.qty; j++) {
         if (Math.random() * 100 < DUNGEON.ENEMY_RATE) {
           let ex: number, ey: number;
           // Reroll position until tile has no items on it
@@ -315,7 +315,7 @@ export class DungeonGenerator {
   }
 
   private getRandomEntity(): EntityData {
-    return ENTITY_DATA[this.depth * 2 + Math.floor(Math.random() * 2)]; // Scale entity selection with depth
+    return ENTITY_DATA[this.depth * 2 - 1 + Math.floor(Math.random() * 2)]; // Scale entity selection with depth
   }
 
   public isWalkable(x: number, y: number): boolean {

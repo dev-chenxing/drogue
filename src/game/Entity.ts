@@ -39,7 +39,7 @@ export function createMobile(
       currentRaw: entity.mp,
       normalized: 1,
     },
-    xp: 0,
+    xp: entity.xp,
     st: {
       base: entity.st,
       baseRaw: entity.st,

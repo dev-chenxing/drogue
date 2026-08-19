@@ -224,6 +224,14 @@ export class GameState {
   }
 
   public useItem(item: ItemStack) {
+    console.log(
+      "useItem type:",
+      item.object.type,
+      "id:",
+      item.object.id,
+      "name:",
+      item.object.name,
+    );
     if (item.object.type === "weapon") {
       // Wield the item
       this.player.weapon = item as ItemStack<Weapon>;
@@ -242,8 +250,8 @@ export class GameState {
         modStatisticCurrent(this.player.mp, magicAmount);
       }
       // Remove the item from inventory after use
-      this.menuManager.removeItemSelected();
       this.showMessage(`drank the ${item.object.name}`, item.object.color);
+      this.menuManager.removeItemSelected();
     }
   }
 

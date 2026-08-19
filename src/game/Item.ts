@@ -80,10 +80,7 @@ export class ItemManager {
 
       itemStack.itemData.seen = true;
       if (itemStack.itemData.count > 1) {
-        this.gameState.showMessage(
-          `found ${itemStack.itemData.count} ${itemStack.object.name}`,
-          COLORS.GREEN,
-        );
+        this.gameState.showMessage(`found ${itemStack.itemData.count} ${itemStack.object.name}`);
       } else {
         const vowel = this.isVowel(itemStack.object.name[0]);
         this.gameState.showMessage(

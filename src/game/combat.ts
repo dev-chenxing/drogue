@@ -1,4 +1,5 @@
 import { COLORS } from "./constants/common";
+import { modStatisticCurrent } from "./Stat";
 import type { Mobile } from "./types";
 
 export interface AttackResult {
@@ -17,10 +18,12 @@ export function eDx(e: Mobile): number {
 
 // Effective evasion
 export function eEv(e: Mobile): number {
-  if (e.armor) {
-    return Math.max(Math.floor(e.dx.current / 3 + e.armor.object.ev), 1);
-  }
-  return Math.max(Math.floor(e.dx.current / 3), 1);
+  if (e.id === "player") {
+    if (e.armor) {
+      return Math.max(Math.floor(e.dx.current / 3 + e.armor.object.ev), 1);
+    }
+    return Math.max(Math.floor(e.dx.current / 3), 1);
+  } else return e.ev; // Enemies just return raw ev field
 }
 
 // Effective damage
@@ -49,10 +52,7 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
 
   const hit = roll < toHit && damage >= 1;
 
-  if (hit) {
-    target.hp.currentRaw -= damage;
-    target.hp.current = Math.max(target.hp.currentRaw, 0);
-  }
+  if (hit) modStatisticCurrent(target.hp, -damage);
 
   const killingBlow = hit && target.hp.current <= 0;
   const messages: string[] = [];
@@ -88,8 +88,7 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
 // Wand/zap attack (magic damage based on the attacker's intelligence)
 export function magicAttack(attacker: Mobile, target: Mobile): AttackResult {
   const damage = Math.floor(Math.random() * (attacker.int.current / 3)) + 1;
-  target.hp.currentRaw -= damage;
-  target.hp.current = Math.max(target.hp.currentRaw, 0);
+  modStatisticCurrent(target.hp, -damage);
   const killingBlow = target.hp.current <= 0;
 
   const messages = [`zapped the ${target.name} for ${damage} damage`];
