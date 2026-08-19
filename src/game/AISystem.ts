@@ -101,6 +101,7 @@ export class AISystem {
     this.computeDistanceMap(player.position, tiles, entities);
 
     for (const entity of entities) {
+      if (player.hp.current <= 0) break; // Stop processing further AI actions once the player is dead
       if (entity.hp.current <= 0) continue; // Skip dead entities
 
       const distanceToPlayer = distance(player.position, entity.position);
@@ -124,6 +125,7 @@ export class AISystem {
       } else {
         // Path is blocked, trigger bumping
         this.handleEntityBump(entity, newPos, gameState);
+        if (player.hp.current <= 0) break;
       }
     }
   }

@@ -54,8 +54,8 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
     target.hp.current = Math.max(target.hp.currentRaw, 0);
   }
 
-  const killingBlow = target.hp.current <= 0;
-  let messages = [];
+  const killingBlow = hit && target.hp.current <= 0;
+  const messages: string[] = [];
 
   if (hit) {
     if (attacker.id === "player") {
@@ -94,7 +94,7 @@ export function magicAttack(attacker: Mobile, target: Mobile): AttackResult {
 
   const messages = [`zapped the ${target.name} for ${damage} damage`];
   if (killingBlow) {
-    messages.push(`the ${target.name} is slain!`);
+    messages.push(`the ${target.name} is slain`);
   }
 
   return {

@@ -14,4 +14,5 @@
 - [ ] refactor(menuscene): state, input, and rendering logic are all mixed in a `Scene` class. Reusability would be improved if we separated them. Menu options (`const options = ["start game", "instructions"]`) shouldn't be hardcoded in the rendering logic.
 - [x] fix(menuscene): `selectedOption` has no bounds checking. `moveUp` and `moveDown` logic hardcode the number of options, which is bad practice. We should have a `getOptions()` method that returns the current options, and then use that to determine the bounds of `selectedOption`.
 - [x] style(preload): use chars instead of fillRect for the progress bar
-- [x] feat: item discovery message when an item enters the player's vision.
+- [x] feat: item discovery message when an item enters the player's vision
+- [x] fix: multiple enemies triggering multiple death messages when the player dies in combat
