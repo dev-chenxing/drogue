@@ -86,6 +86,7 @@ export class GameState {
 
     this.player.position = playerStart;
     updateVisibility(this.player.position, this.tiles);
+    this.entityManager.discoverVisibleEntities();
     this.itemManager.discoverVisibleItems();
   }
 
@@ -118,6 +119,7 @@ export class GameState {
     if (this.isWalkable(newPos)) {
       this.player.position = newPos;
       updateVisibility(this.player.position, this.tiles);
+      this.entityManager.discoverVisibleEntities();
       this.itemManager.discoverVisibleItems();
       this.itemManager.autoPickupItems();
       // Check for stairs
@@ -146,6 +148,7 @@ export class GameState {
     tile.walkable = true;
 
     updateVisibility(this.player.position, this.tiles);
+    this.entityManager.discoverVisibleEntities();
     this.itemManager.discoverVisibleItems();
   }
 
@@ -199,7 +202,7 @@ export class GameState {
     // AI turns
     this.aiSystem.processAITurn(this);
 
-    // Items can become visible from combat changes during the turn
+    this.entityManager.discoverVisibleEntities();
     this.itemManager.discoverVisibleItems();
 
     // Check if the player is dead after the AI turn

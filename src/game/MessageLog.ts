@@ -1,6 +1,11 @@
 import { COLORS, UI } from "./constants/common";
 import type { Message } from "./types";
 
+export function getIndefiniteArticle(word: string): "a" | "an" {
+  const firstChar = word.trim().charAt(0).toLowerCase();
+  return ["a", "e", "i", "o", "u"].includes(firstChar) ? "an" : "a";
+}
+
 export class MessageLog {
   private messages: Message[] = [];
 

@@ -1,6 +1,7 @@
 import { COLORS } from "./constants/common";
 import { ITEM_DATA } from "./constants/items";
 import type { GameState } from "./GameState";
+import { getIndefiniteArticle } from "./MessageLog";
 import type { ItemStack, ItemTemplate } from "./types";
 import { isVisible } from "./Vision";
 
@@ -56,10 +57,8 @@ export class ItemManager {
           // Inventory item pickup
           const playerItems = this.gameState.player.items;
           if (playerItems.length < 14) {
-            const vowel = this.isVowel(itemStack.object.name[0]);
             this.gameState.showMessage(
-              `got ${vowel ? "an" : "a"} ${itemStack.object.name}`,
-              COLORS.GREEN,
+              `got ${getIndefiniteArticle(itemStack.object.name)} ${itemStack.object.name}`,
             );
             this.items.splice(i, 1);
             // Add the item to the player's inventory
@@ -82,17 +81,11 @@ export class ItemManager {
       if (itemStack.itemData.count > 1) {
         this.gameState.showMessage(`found ${itemStack.itemData.count} ${itemStack.object.name}`);
       } else {
-        const vowel = this.isVowel(itemStack.object.name[0]);
         this.gameState.showMessage(
-          `found ${vowel ? "an" : "a"} ${itemStack.object.name}`,
-          COLORS.GREEN,
+          `found ${getIndefiniteArticle(itemStack.object.name)} ${itemStack.object.name}`,
         );
       }
     }
-  }
-
-  private isVowel(char: string): boolean {
-    return ["a", "e", "i", "o", "u"].includes(char.toLowerCase());
   }
 
   public clear() {

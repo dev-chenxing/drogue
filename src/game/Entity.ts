@@ -1,7 +1,10 @@
 import { getItem } from "./Item";
+import { COLORS } from "./constants/common";
 import { ENTITY_DATA } from "./constants/entities";
 import type { GameState } from "./GameState";
+import { getIndefiniteArticle } from "./MessageLog";
 import type { EntityData, ItemStack, Mobile, Vector2 } from "./types";
+import { isVisible } from "./Vision";
 
 export function getEntity(entityId: string): EntityData {
   const entity = ENTITY_DATA.find((candidate) => candidate.name === entityId);
@@ -122,6 +125,22 @@ export class EntityManager {
         (entity) => entity.position.x === position.x && entity.position.y === position.y,
       ) || null
     );
+  }
+
+  public discoverVisibleEntities() {
+    const playerPos = this.gameState.player.position;
+    const tiles = this.gameState.tiles;
+
+    for (const entity of this.entities) {
+      if (entity.seen) continue;
+      if (!isVisible(playerPos, entity.position, tiles)) continue;
+
+      entity.seen = true;
+      this.gameState.showMessage(
+        `${getIndefiniteArticle(entity.name)} ${entity.name} draws near!`,
+        COLORS.PINK,
+      );
+    }
   }
 
   public clear() {
