@@ -17,7 +17,7 @@ export const COLORS = {
   BLUE: "#29ADFF",
   LAVENDER: "#83769C",
   PINK: "#FF77A8",
-  LIGHT_PEACH: "#FFCCAA",
+  PEACH: "#FFCCAA",
 };
 
 export const TILES: { [key: string]: Tile } = {

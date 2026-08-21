@@ -5,6 +5,8 @@ import { isVisible } from "../game/Vision";
 import { eAc, eDmg, eEv, hpColor, mpColor } from "../game/combat";
 import { drawText, hexToColor } from "../game/draw";
 
+type ViewportCell = { text: string; color: string } | null;
+
 export class GameScene extends Phaser.Scene {
   private gameState!: GameState;
   private graphics!: Phaser.GameObjects.Graphics;
@@ -210,7 +212,13 @@ export class GameScene extends Phaser.Scene {
     const playerPos = this.gameState.player.position;
     const tiles = this.gameState.tiles;
 
-    // Draw tiles (viewport centered around player)
+    // Compositing buffer for the viewport
+    const viewportCells: Array<Array<ViewportCell>> = Array.from(
+      { length: UI.VIEWPORT_WIDTH },
+      () => Array.from({ length: UI.VIEWPORT_HEIGHT }, () => null),
+    );
+
+    // Build base layer from tiles (viewport centered around player)
     for (let viewX = 0; viewX < UI.VIEWPORT_WIDTH; viewX++) {
       for (let viewY = 0; viewY < UI.VIEWPORT_HEIGHT; viewY++) {
         const tileX = viewX - Math.floor(UI.VIEWPORT_WIDTH / 2) + playerPos.x;
@@ -219,21 +227,19 @@ export class GameScene extends Phaser.Scene {
         if (tileX < 0 || tileY < 0 || !tiles[tileX] || !tiles[tileX][tileY]) continue;
 
         const tile = tiles[tileX][tileY];
-        const screenX = viewX * UI.CHAR_WIDTH;
-        const screenY = viewY * UI.CHAR_HEIGHT;
 
         if (isVisible(playerPos, { x: tileX, y: tileY }, tiles)) {
           // Currently visible tile - full brightness
-          this.drawFrameText(screenX, screenY, tile.character, tile.color);
+          viewportCells[viewX][viewY] = { text: tile.character, color: tile.color };
         } else if (tile.seen) {
           // Explored but not currently visible - dark blue color
-          this.drawFrameText(screenX, screenY, tile.character, COLORS.DARK_BLUE);
+          viewportCells[viewX][viewY] = { text: tile.character, color: COLORS.DARK_BLUE };
         }
         // else: not seen, do not draw anything (black background)
       }
     }
 
-    // Draw items
+    // Overlay visible items on top of tiles
     const items = this.gameState.itemManager.getItems();
     for (const item of items) {
       const itemPos = item.itemData.position;
@@ -243,38 +249,36 @@ export class GameScene extends Phaser.Scene {
       const viewY = itemPos.y - playerPos.y + Math.floor(UI.VIEWPORT_HEIGHT / 2);
 
       if (viewX >= 0 && viewX < UI.VIEWPORT_WIDTH && viewY >= 0 && viewY < UI.VIEWPORT_HEIGHT) {
-        this.drawFrameText(
-          viewX * UI.CHAR_WIDTH,
-          viewY * UI.CHAR_HEIGHT,
-          item.object.tile,
-          item.object.color,
-        );
+        viewportCells[viewX][viewY] = { text: item.object.tile, color: item.object.color };
       }
     }
 
-    // Draw entities (enemies)
+    // Overlay visible entities on top of items
     for (const entity of this.gameState.entityManager.getEntities()) {
       if (isVisible(playerPos, entity.position, tiles)) {
         const viewX = entity.position.x - playerPos.x + Math.floor(UI.VIEWPORT_WIDTH / 2);
         const viewY = entity.position.y - playerPos.y + Math.floor(UI.VIEWPORT_HEIGHT / 2);
         if (viewX >= 0 && viewX < UI.VIEWPORT_WIDTH && viewY >= 0 && viewY < UI.VIEWPORT_HEIGHT) {
-          this.drawFrameText(
-            viewX * UI.CHAR_WIDTH,
-            viewY * UI.CHAR_HEIGHT,
-            entity.tile,
-            entity.color,
-          );
+          viewportCells[viewX][viewY] = { text: entity.tile, color: entity.color };
         }
       }
     }
 
-    // Draw player
-    this.drawFrameText(
-      Math.floor(UI.VIEWPORT_WIDTH / 2) * UI.CHAR_WIDTH,
-      Math.floor(UI.VIEWPORT_HEIGHT / 2) * UI.CHAR_HEIGHT,
-      this.gameState.player.tile,
-      this.gameState.player.color,
-    );
+    // Overlay player on top of everything else
+    viewportCells[Math.floor(UI.VIEWPORT_WIDTH / 2)][Math.floor(UI.VIEWPORT_HEIGHT / 2)] = {
+      text: this.gameState.player.tile,
+      color: this.gameState.player.color,
+    };
+
+    // Render final composited viewport to the screen
+    for (let viewX = 0; viewX < UI.VIEWPORT_WIDTH; viewX++) {
+      for (let viewY = 0; viewY < UI.VIEWPORT_HEIGHT; viewY++) {
+        const cell = viewportCells[viewX][viewY];
+        if (!cell) continue;
+
+        this.drawFrameText(viewX * UI.CHAR_WIDTH, viewY * UI.CHAR_HEIGHT, cell.text, cell.color);
+      }
+    }
   }
 
   private renderSidebar() {

@@ -59,20 +59,20 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
 
   if (hit) {
     if (attacker.id === "player") {
-      messages.push(`hit the ${target.name} for ${damage} damage.`);
+      messages.push(`hit the ${target.name} for ${damage} damage`);
     } else {
-      messages.push(`the ${attacker.name} hits for ${damage} damage.`);
+      messages.push(`the ${attacker.name} hits for ${damage} damage`, COLORS.PINK);
     }
   } else {
     if (attacker.id === "player") {
-      messages.push(`missed the ${target.name}.`);
+      messages.push(`missed the ${target.name}`);
     } else {
-      messages.push(`the ${attacker.name} misses.`);
+      messages.push(`the ${attacker.name} misses`);
     }
   }
 
   if (killingBlow) {
-    messages.push(`the ${target.name} is slain!`);
+    messages.push(`the ${target.name} is slain`);
   }
 
   return {

@@ -21,7 +21,7 @@ export const ENTITY_DATA = [
   {
     name: "ant",
     tile: "a",
-    color: COLORS.GREEN,
+    color: COLORS.DARK_PURPLE,
     hp: 3,
     mp: 0,
     xp: 1,
@@ -106,7 +106,7 @@ export const ENTITY_DATA = [
   {
     name: "kobold",
     tile: "k",
-    color: COLORS.DARK_GREEN,
+    color: COLORS.BLUE,
     hp: 9,
     mp: 0,
     xp: 6,
@@ -123,7 +123,7 @@ export const ENTITY_DATA = [
   {
     name: "goblin",
     tile: "g",
-    color: COLORS.GREEN,
+    color: COLORS.DARK_GREEN,
     hp: 12,
     mp: 0,
     xp: 7,
@@ -140,7 +140,7 @@ export const ENTITY_DATA = [
   {
     name: "orc",
     tile: "o",
-    color: COLORS.DARK_GREEN,
+    color: COLORS.LIGHT_GRAY,
     hp: 12,
     mp: 0,
     xp: 8,
@@ -174,7 +174,7 @@ export const ENTITY_DATA = [
   {
     name: "troll",
     tile: "t",
-    color: COLORS.DARK_GREEN,
+    color: COLORS.DARK_GRAY,
     hp: 15,
     mp: 0,
     xp: 10,
@@ -191,7 +191,7 @@ export const ENTITY_DATA = [
   {
     name: "phantom",
     tile: "p",
-    color: COLORS.LAVENDER,
+    color: COLORS.LIGHT_GRAY,
     hp: 18,
     mp: 0,
     xp: 11,
@@ -208,7 +208,7 @@ export const ENTITY_DATA = [
   {
     name: "zombie",
     tile: "z",
-    color: COLORS.DARK_GRAY,
+    color: COLORS.WHITE,
     hp: 18,
     mp: 0,
     xp: 12,
@@ -225,7 +225,7 @@ export const ENTITY_DATA = [
   {
     name: "mummy",
     tile: "m",
-    color: COLORS.LIGHT_GRAY,
+    color: COLORS.PEACH,
     hp: 21,
     mp: 0,
     xp: 13,
@@ -259,7 +259,7 @@ export const ENTITY_DATA = [
   {
     name: "wraith",
     tile: "w",
-    color: COLORS.LAVENDER,
+    color: COLORS.DARK_GRAY,
     hp: 24,
     mp: 0,
     xp: 15,
@@ -276,7 +276,7 @@ export const ENTITY_DATA = [
   {
     name: "lich",
     tile: "l",
-    color: COLORS.LIGHT_GRAY,
+    color: COLORS.WHITE,
     hp: 24,
     mp: 0,
     xp: 16,
@@ -293,7 +293,7 @@ export const ENTITY_DATA = [
   {
     name: "dragon",
     tile: "d",
-    color: COLORS.ORANGE,
+    color: COLORS.PINK,
     hp: 27,
     mp: 0,
     xp: 17,
@@ -310,7 +310,7 @@ export const ENTITY_DATA = [
   {
     name: "hydra",
     tile: "h",
-    color: COLORS.GREEN,
+    color: COLORS.RED,
     hp: 30,
     mp: 0,
     xp: 18,
