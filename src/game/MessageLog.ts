@@ -1,5 +1,5 @@
 import { COLORS, UI } from "./constants/common";
-import type { Message } from "./types";
+import type { Message, MessageLine } from "./types";
 
 export function getIndefiniteArticle(word: string): "a" | "an" {
   const firstChar = word.trim().charAt(0).toLowerCase();
@@ -9,8 +9,15 @@ export function getIndefiniteArticle(word: string): "a" | "an" {
 export class MessageLog {
   private messages: Message[] = [];
 
-  public showMessage(arg: string | string[], color: string = COLORS.WHITE): void {
-    const lines = Array.isArray(arg) ? arg : [arg];
+  public showMessage(
+    arg: string | MessageLine | Array<string | MessageLine>,
+    color: string = COLORS.WHITE,
+  ): void {
+    const rawLines = Array.isArray(arg) ? arg : [arg];
+    const lines: MessageLine[] = rawLines.map((line) =>
+      typeof line === "string" ? { text: line } : line,
+    );
+
     this.messages.push({ lines, color });
     while (this.messageLineCount() > UI.MESSAGE_LOG_HEIGHT * 2) {
       this.messages.shift();

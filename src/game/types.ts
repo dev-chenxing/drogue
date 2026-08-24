@@ -116,8 +116,13 @@ export interface Armor extends Item {
   ev: number; // Evasion provided by the armor
 }
 
+export interface MessageLine {
+  text: string;
+  color?: string;
+}
+
 export interface Message {
-  lines: string[];
+  lines: MessageLine[];
   color: string;
 }
 

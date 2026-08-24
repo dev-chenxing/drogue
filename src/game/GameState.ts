@@ -8,7 +8,16 @@ import { MenuManager } from "./Menu";
 import { MessageLog } from "./MessageLog";
 import { SaveManger } from "./Save";
 import { modStatisticBase, modStatisticCurrent, modStatisticValue } from "./Stat";
-import type { Armor, GameMode, ItemStack, Mobile, Tile, Vector2, Weapon } from "./types";
+import type {
+  Armor,
+  GameMode,
+  ItemStack,
+  MessageLine,
+  Mobile,
+  Tile,
+  Vector2,
+  Weapon,
+} from "./types";
 import { distance, hasLineOfSight, updateVisibility } from "./Vision";
 
 export class GameState {
@@ -154,7 +163,7 @@ export class GameState {
 
   private playerAttack(enemy: Mobile) {
     const result = meleeAttack(this.player, enemy);
-    this.showMessage(result.messages, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
+    this.showMessage(result.messages);
     if (result.killingBlow) {
       this.entityManager.killEntity(enemy);
     }
@@ -328,7 +337,7 @@ export class GameState {
     for (const entity of this.entityManager.getEntities()) {
       if (entity.position.x === targetPos.x && entity.position.y === targetPos.y) {
         const result = magicAttack(this.player, entity);
-        this.showMessage(result.messages, result.hit ? COLORS.RED : COLORS.LIGHT_GRAY);
+        this.showMessage(result.messages);
         if (result.killingBlow) {
           this.entityManager.killEntity(entity);
         }
@@ -345,7 +354,10 @@ export class GameState {
   }
 
   // Messaging system
-  public showMessage(textOrLines: string | string[], color = "white") {
+  public showMessage(
+    textOrLines: string | MessageLine | Array<string | MessageLine>,
+    color = COLORS.WHITE,
+  ) {
     this.msgLog.showMessage(textOrLines, color);
   }
 }

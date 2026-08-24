@@ -397,8 +397,8 @@ export class GameScene extends Phaser.Scene {
       ) {
         const line = msg.lines[lineIndex];
         const txt = this.messageTextObjects[drawIndex];
-        txt.setText(line ?? "");
-        txt.setColor(msg.color ?? COLORS.WHITE);
+        txt.setText(line?.text ?? "");
+        txt.setColor(line?.color ?? msg.color ?? COLORS.WHITE);
         txt.setPosition(0, startY + drawIndex * UI.CHAR_HEIGHT);
         txt.setVisible(true);
       }

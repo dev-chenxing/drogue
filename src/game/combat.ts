@@ -1,6 +1,6 @@
 import { COLORS } from "./constants/common";
 import { modStatisticCurrent } from "./Stat";
-import type { Mobile } from "./types";
+import type { MessageLine, Mobile } from "./types";
 
 export interface AttackResult {
   hit: boolean;
@@ -8,7 +8,7 @@ export interface AttackResult {
   attacker: Mobile; // The mobile making the attack
   target: Mobile; // The mobile being attacked
   killingBlow: boolean; // If true, the target was killed by this attack
-  messages: string[];
+  messages: MessageLine[];
 }
 
 // Effective dexterity (to-hit)
@@ -55,24 +55,27 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
   if (hit) modStatisticCurrent(target.hp, -damage);
 
   const killingBlow = hit && target.hp.current <= 0;
-  const messages: string[] = [];
+  const messages: MessageLine[] = [];
 
   if (hit) {
     if (attacker.id === "player") {
-      messages.push(`hit the ${target.name} for ${damage} damage`);
+      messages.push({
+        text: `hit the ${target.name} for ${damage} damage`,
+        color: COLORS.LAVENDER,
+      });
     } else {
-      messages.push(`the ${attacker.name} hits for ${damage} damage`, COLORS.PINK);
+      messages.push({ text: `the ${attacker.name} hits for ${damage} damage`, color: COLORS.PINK });
     }
   } else {
     if (attacker.id === "player") {
-      messages.push(`missed the ${target.name}`);
+      messages.push({ text: `missed the ${target.name}` });
     } else {
-      messages.push(`the ${attacker.name} misses`);
+      messages.push({ text: `the ${attacker.name} misses` });
     }
   }
 
   if (killingBlow) {
-    messages.push(`the ${target.name} is slain`);
+    messages.push({ text: `the ${target.name} is slain`, color: COLORS.LAVENDER });
   }
 
   return {
@@ -91,9 +94,14 @@ export function magicAttack(attacker: Mobile, target: Mobile): AttackResult {
   modStatisticCurrent(target.hp, -damage);
   const killingBlow = target.hp.current <= 0;
 
-  const messages = [`zapped the ${target.name} for ${damage} damage`];
+  const messages: MessageLine[] = [
+    {
+      text: `zapped the ${target.name} for ${damage} damage`,
+      color: attacker.id === "player" ? COLORS.LAVENDER : COLORS.PINK,
+    },
+  ];
   if (killingBlow) {
-    messages.push(`the ${target.name} is slain`);
+    messages.push({ text: `the ${target.name} is slain`, color: COLORS.LAVENDER });
   }
 
   return {

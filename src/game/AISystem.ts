@@ -1,5 +1,5 @@
 import { meleeAttack } from "./combat";
-import { COLORS, DIRECTIONS, DUNGEON } from "./constants/common";
+import { DIRECTIONS, DUNGEON } from "./constants/common";
 import type { GameState } from "./GameState";
 import type { Mobile, Tile, Vector2 } from "./types";
 import { distance } from "./Vision";
@@ -137,8 +137,7 @@ export class AISystem {
       gameState.player.position.y === targetPos.y
     ) {
       const result = meleeAttack(entity, gameState.player);
-      const color = result.hit ? COLORS.RED : COLORS.LIGHT_GRAY;
-      gameState.showMessage(result.messages, color);
+      gameState.showMessage(result.messages);
       return;
     }
 
@@ -147,8 +146,7 @@ export class AISystem {
     if (targetEntity) {
       // Attack if the entity is adjacent
       const result = meleeAttack(entity, targetEntity);
-      const color = result.hit ? COLORS.RED : COLORS.LIGHT_GRAY;
-      gameState.showMessage(result.messages, color);
+      gameState.showMessage(result.messages);
       if (result.killingBlow) {
         gameState.entityManager.killEntity(targetEntity);
       }

@@ -1,4 +1,3 @@
-import { COLORS } from "./constants/common";
 import { ITEM_DATA } from "./constants/items";
 import type { GameState } from "./GameState";
 import { getIndefiniteArticle } from "./MessageLog";
@@ -51,7 +50,7 @@ export class ItemManager {
         if (itemStack.object.type === "gold") {
           // Gold is automatically added to the player's gold count
           this.gameState.player.gold += itemStack.itemData.count;
-          this.gameState.showMessage(`gained ${itemStack.itemData.count} gold`, COLORS.YELLOW);
+          this.gameState.showMessage(`gained ${itemStack.itemData.count} gold`);
           this.items.splice(i, 1);
         } else {
           // Inventory item pickup
