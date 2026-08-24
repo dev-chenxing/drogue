@@ -191,7 +191,7 @@ export class GameState {
   private descendStairs() {
     this.depth++;
     this.generateLevel();
-    this.showMessage(`descended to floor ${this.depth}`, COLORS.GREEN);
+    this.showMessage(`descended to floor ${this.depth}`, COLORS.LAVENDER);
   }
 
   private winGame() {
@@ -236,14 +236,6 @@ export class GameState {
   }
 
   public useItem(item: ItemStack) {
-    console.log(
-      "useItem type:",
-      item.object.type,
-      "id:",
-      item.object.id,
-      "name:",
-      item.object.name,
-    );
     if (item.object.type === "weapon") {
       // Wield the item
       this.player.weapon = item as ItemStack<Weapon>;
@@ -253,16 +245,17 @@ export class GameState {
       this.player.armor = item as ItemStack<Armor>;
       this.showMessage(`put on the ${item.object.name}`);
     } else if (item.object.type === "potion") {
-      // Drink the item
-      if (item.object.id === "health potion") {
-        const healAmount = Math.floor(this.player.hp.base * 0.67);
+      this.showMessage(`drank the ${item.object.name}`, item.object.color);
+
+      if (item.object.name === "health potion") {
+        const healAmount = Math.max(1, Math.floor(this.player.hp.base * 0.67));
         modStatisticCurrent(this.player.hp, healAmount);
-      } else if (item.object.id === "magic potion") {
-        const magicAmount = Math.floor(this.player.mp.base * 0.67);
+      } else if (item.object.name === "magic potion") {
+        const magicAmount = Math.max(1, Math.floor(this.player.mp.base * 0.67));
         modStatisticCurrent(this.player.mp, magicAmount);
       }
+
       // Remove the item from inventory after use
-      this.showMessage(`drank the ${item.object.name}`, item.object.color);
       this.menuManager.removeItemSelected();
     }
   }

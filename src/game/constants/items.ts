@@ -139,7 +139,7 @@ export const ITEM_DATA: ItemTemplate[] = [
   {
     name: "health potion",
     tile: "!",
-    color: COLORS.RED,
+    color: COLORS.GREEN,
     type: "potion",
     dmg: 0,
     ac: 0,
