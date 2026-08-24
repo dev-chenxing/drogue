@@ -112,7 +112,7 @@ export class MenuManager {
           width: 16,
           height: 5,
           title: "",
-          options: [useWord, "drop", "cancel"],
+          options: [useWord, "drop"],
           action: 3,
         });
       }

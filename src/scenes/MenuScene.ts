@@ -1,6 +1,6 @@
 import * as Phaser from "phaser";
 import { COLORS, UI } from "../game/constants/common";
-import { drawCenteredText, drawText, drawTitle } from "../game/draw";
+import { drawText, drawTitle } from "../game/draw";
 
 // Define menu options
 type MenuOption = {
@@ -81,7 +81,7 @@ export class MenuScene extends Phaser.Scene {
       const optionIndex = i + 1;
       const isSelected = this.selectedOption === optionIndex;
       const prefix = isSelected && blink ? ">" : " ";
-      drawCenteredText(this, y, prefix + options[i].label, COLORS.WHITE);
+      drawText(this, centerX, y, prefix + options[i].label, COLORS.WHITE, true);
       y += 2 * UI.CHAR_HEIGHT;
     }
     y += UI.CHAR_HEIGHT * 3;

@@ -74,7 +74,7 @@ export function meleeAttack(attacker: Mobile, target: Mobile): AttackResult {
     }
   }
 
-  if (killingBlow) {
+  if (killingBlow && target.id !== "player") {
     messages.push({ text: `the ${target.name} is slain`, color: COLORS.LAVENDER });
   }
 
@@ -100,7 +100,7 @@ export function magicAttack(attacker: Mobile, target: Mobile): AttackResult {
       color: attacker.id === "player" ? COLORS.LAVENDER : COLORS.PINK,
     },
   ];
-  if (killingBlow) {
+  if (killingBlow && target.id !== "player") {
     messages.push({ text: `the ${target.name} is slain`, color: COLORS.LAVENDER });
   }
 

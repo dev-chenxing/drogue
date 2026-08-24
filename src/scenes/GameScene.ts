@@ -482,7 +482,7 @@ export class GameScene extends Phaser.Scene {
       for (let i = 0; i < menu.options.length; i++) {
         // PICO-8 options start one row below the title line.
         const optionY = menu.positionY + 2 + i;
-        const textX = (menu.positionX + 2) * UI.CHAR_WIDTH;
+        const textX = (menu.positionX + 3) * UI.CHAR_WIDTH;
         const textY = optionY * UI.CHAR_HEIGHT;
         const isSelected = isTop && i + 1 === this.gameState.menuManager.getMenuSelect();
         const prefix = isSelected && blink ? ">" : " ";
