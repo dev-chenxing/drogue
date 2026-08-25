@@ -20,8 +20,10 @@ export function createMobile(
   id: number,
   floor: number,
 ): Mobile {
+  const mobileId = entity.name === "player" ? "player" : `${entity.name}${id}`;
+
   return {
-    id: `${entity.name}${id}`,
+    id: mobileId,
     name: entity.name,
     tile: entity.tile,
     color: entity.color,
