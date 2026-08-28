@@ -1,7 +1,6 @@
 import * as Phaser from "phaser";
 import { COLORS, UI } from "./game/constants/common";
 import { GameScene } from "./scenes/GameScene";
-import { HighScoresScene } from "./scenes/HighScoresScene";
 import { InstructionsScene } from "./scenes/InstructionsScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { PreloadScene } from "./scenes/PreloadScene";
@@ -17,7 +16,7 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [PreloadScene, MenuScene, GameScene, InstructionsScene, HighScoresScene],
+  scene: [PreloadScene, MenuScene, GameScene, InstructionsScene],
 };
 
 new Phaser.Game(config);

@@ -86,11 +86,6 @@ export class GameScene extends Phaser.Scene {
       this.handleTargetInput();
     } else if (mode === "dead" || mode === "win") {
       if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.space)) {
-        this.gameState.saveManager.saveHighScore(
-          "PLAYER",
-          this.gameState.score,
-          this.gameState.depth,
-        );
         this.scene.start("MenuScene");
         return; // Exit early to avoid rendering after scene change
       }

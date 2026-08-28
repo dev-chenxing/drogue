@@ -6,7 +6,6 @@ import { createMobile, EntityManager, getEntity } from "./Entity";
 import { ItemManager } from "./Item";
 import { MenuManager } from "./Menu";
 import { MessageLog } from "./MessageLog";
-import { SaveManger } from "./Save";
 import { modStatisticBase, modStatisticCurrent, modStatisticValue } from "./Stat";
 import type {
   Armor,
@@ -35,8 +34,6 @@ export class GameState {
   public showCursor = false;
   public cursorPosition: Vector2 = { x: 7, y: 7 };
 
-  public score = 0;
-
   private turnCount = 0;
   private blinkTimer = 0;
 
@@ -45,7 +42,6 @@ export class GameState {
   public entityManager: EntityManager;
   public itemManager: ItemManager;
   public menuManager: MenuManager;
-  public saveManager: SaveManger;
 
   constructor() {
     this.aiSystem = new AISystem();
@@ -53,7 +49,6 @@ export class GameState {
     this.entityManager = new EntityManager(this);
     this.itemManager = new ItemManager(this);
     this.menuManager = new MenuManager(this);
-    this.saveManager = new SaveManger();
     this.newGame();
   }
 
@@ -198,7 +193,6 @@ export class GameState {
     this.victory = true;
     this.mode = "win";
     this.gameOver = true;
-    this.score = this.player.xp + this.player.gold * 10 + this.player.floor * 100;
     this.showMessage("power surges through you as you", COLORS.GREEN);
     this.showMessage("grasp the infamous orb of elad", COLORS.GREEN);
     this.showMessage("victory is yours!", COLORS.GREEN);
@@ -218,7 +212,6 @@ export class GameState {
     if (this.player.hp.current <= 0) {
       this.gameOver = true;
       this.mode = "dead";
-      this.score = this.player.xp + this.player.gold * 10 + this.depth * 50;
       this.showMessage("you are dead", COLORS.RED);
       this.showMessage("press SPACE to continue", COLORS.RED);
     }
