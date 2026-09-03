@@ -213,7 +213,7 @@ export class GameState {
       this.gameOver = true;
       this.mode = "dead";
       this.showMessage("you are dead", COLORS.RED);
-      this.showMessage("press SPACE to continue", COLORS.RED);
+      this.showMessage("press [x] to continue", COLORS.RED);
     }
   }
 

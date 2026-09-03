@@ -4,6 +4,7 @@ import { GameState } from "../game/GameState";
 import { isVisible } from "../game/Vision";
 import { eAc, eDmg, eEv, hpColor, mpColor } from "../game/combat";
 import { drawText, hexToColor } from "../game/draw";
+import { allArrowDirection, KeyboardRepeater, verticalDirection } from "../game/Keyboard";
 
 type ViewportCell = { text: string; color: string } | null;
 
@@ -20,6 +21,11 @@ export class GameScene extends Phaser.Scene {
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys; // Arrow keys
   private keyC!: Phaser.Input.Keyboard.Key;
   private keyX!: Phaser.Input.Keyboard.Key;
+
+  // Movement is turn-based, so held keys are sampled at a controlled rate
+  // rather than once per render frame.
+  private readonly keyboardRepeater = new KeyboardRepeater();
+  private previousMode: GameState["mode"] | null = null;
 
   constructor() {
     super({ key: "GameScene" });
@@ -61,14 +67,18 @@ export class GameScene extends Phaser.Scene {
     this.gameState.update(dt);
 
     const mode = this.gameState.mode;
+    if (mode !== this.previousMode) {
+      this.keyboardRepeater.reset();
+      this.previousMode = mode;
+    }
     if (mode === "game") {
-      this.handleGameInput();
+      this.handleGameInput(delta);
     } else if (mode === "inventory") {
-      this.handleMenuInput();
+      this.handleMenuInput(delta);
     } else if (mode === "map") {
-      this.handleMapInput();
+      this.handleMapInput(delta);
     } else if (mode === "target") {
-      this.handleTargetInput();
+      this.handleTargetInput(delta);
     } else if (mode === "dead" || mode === "win") {
       if (Phaser.Input.Keyboard.JustDown(this.keyX)) {
         this.scene.start("MenuScene");
@@ -78,16 +88,16 @@ export class GameScene extends Phaser.Scene {
     this.render();
   }
 
-  private handleGameInput() {
-    // Movement input
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.left))
-      return this.gameState.handleMove({ x: -1, y: 0 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.right))
-      return this.gameState.handleMove({ x: 1, y: 0 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.up))
-      return this.gameState.handleMove({ x: 0, y: -1 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
-      return this.gameState.handleMove({ x: 0, y: 1 });
+  private handleGameInput(delta: number) {
+    // Movement input: act immediately, then repeat while the key is held.
+    // Keep the existing cardinal priority when multiple keys are held.
+    const direction = allArrowDirection(this.cursorKeys);
+    this.keyboardRepeater.update(delta, this.cursorKeys, (moveDirection) =>
+      this.gameState.handleMove(moveDirection),
+    );
+
+    // Do not process C/X on the same frame as movement.
+    if (direction) return;
 
     // C = Open menu
     if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.gameState.menuManager.openMenu();
@@ -95,34 +105,31 @@ export class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.enterTargetingMode();
   }
 
-  private handleMenuInput() {
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.up)) this.gameState.menuManager.menuUp();
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down)) this.gameState.menuManager.menuDown();
+  private handleMenuInput(delta: number) {
+    this.keyboardRepeater.update(
+      delta,
+      this.cursorKeys,
+      (direction) => {
+        if (direction.y < 0) this.gameState.menuManager.menuUp();
+        else this.gameState.menuManager.menuDown();
+      },
+      verticalDirection,
+    );
     if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.gameState.menuManager.menuBack();
     if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.menuManager.menuSelectOption();
   }
 
-  private handleMapInput() {
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.left))
-      this.gameState.moveMapCamera({ x: -1, y: 0 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.right))
-      this.gameState.moveMapCamera({ x: 1, y: 0 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.up))
-      this.gameState.moveMapCamera({ x: 0, y: -1 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
-      this.gameState.moveMapCamera({ x: 0, y: 1 });
+  private handleMapInput(delta: number) {
+    this.keyboardRepeater.update(delta, this.cursorKeys, (direction) =>
+      this.gameState.moveMapCamera(direction),
+    );
     if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.gameState.menuManager.closeMenu();
   }
 
-  private handleTargetInput() {
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.left))
-      this.gameState.moveTargetCursor({ x: -1, y: 0 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.right))
-      this.gameState.moveTargetCursor({ x: 1, y: 0 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.up))
-      this.gameState.moveTargetCursor({ x: 0, y: -1 });
-    if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
-      this.gameState.moveTargetCursor({ x: 0, y: 1 });
+  private handleTargetInput(delta: number) {
+    this.keyboardRepeater.update(delta, this.cursorKeys, (direction) =>
+      this.gameState.moveTargetCursor(direction),
+    );
     if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.fireWand();
     if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.gameState.exitTargetingMode();
   }

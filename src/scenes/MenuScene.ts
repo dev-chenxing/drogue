@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import { COLORS, UI } from "../game/constants/common";
 import { drawText, drawTitle } from "../game/draw";
+import { KeyboardRepeater, verticalDirection } from "../game/Keyboard";
 
 // Define menu options
 type MenuOption = {
@@ -11,6 +12,9 @@ type MenuOption = {
 export class MenuScene extends Phaser.Scene {
   private selectedOption: number = 1;
   private blinkTimer: number = 0;
+  private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private keyX!: Phaser.Input.Keyboard.Key;
+  private readonly keyboardRepeater = new KeyboardRepeater();
 
   constructor() {
     super({ key: "MenuScene" });
@@ -24,15 +28,26 @@ export class MenuScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.BLACK);
 
     // Keyboard input
-    this.input.keyboard!.on("keydown-UP", () => this.moveSelect(-1));
-    this.input.keyboard!.on("keydown-DOWN", () => this.moveSelect(1));
-    this.input.keyboard!.on("keydown-X", () => this.confirmSelection());
+    this.cursorKeys = this.input.keyboard!.createCursorKeys();
+    this.keyX = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
 
     // Display title and options
     this.render();
   }
 
   update(_time: number, delta: number) {
+    this.keyboardRepeater.update(
+      delta,
+      this.cursorKeys,
+      ({ y }) => this.moveSelect(y),
+      verticalDirection,
+    );
+
+    if (Phaser.Input.Keyboard.JustDown(this.keyX)) {
+      this.confirmSelection();
+      return;
+    }
+
     const prevBlink = Math.floor(this.blinkTimer / 300);
     this.blinkTimer += delta;
     const currentBlink = Math.floor(this.blinkTimer / 300);

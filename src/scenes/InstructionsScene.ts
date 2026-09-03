@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import { COLORS, UI } from "../game/constants/common";
 import { drawText } from "../game/draw";
+import { KeyboardRepeater } from "../game/Keyboard";
 
 export class InstructionsScene extends Phaser.Scene {
   private pageIndex: number = 0;
@@ -11,6 +12,7 @@ export class InstructionsScene extends Phaser.Scene {
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keyC!: Phaser.Input.Keyboard.Key;
   private keyX!: Phaser.Input.Keyboard.Key;
+  private readonly keyboardRepeater = new KeyboardRepeater();
 
   constructor() {
     super({ key: "InstructionsScene" });
@@ -114,14 +116,17 @@ export class InstructionsScene extends Phaser.Scene {
     this.keyX = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
     this.cursorKeys = this.input.keyboard!.createCursorKeys();
 
-    this.keyC.on("down", () => this.nextPage());
-    this.keyX.on("down", () => this.nextPage());
-    this.cursorKeys.up?.on("down", () => this.nextPage());
-    this.cursorKeys.down?.on("down", () => this.nextPage());
-    this.cursorKeys.left?.on("down", () => this.nextPage());
-    this.cursorKeys.right?.on("down", () => this.nextPage());
-
     this.renderPage();
+  }
+
+  update(_time: number, delta: number) {
+    this.keyboardRepeater.update(delta, this.cursorKeys, () => this.nextPage());
+
+    // C and X advance once per press; browser key-repeat should not advance
+    // multiple pages for these one-shot controls.
+    if (Phaser.Input.Keyboard.JustDown(this.keyC) || Phaser.Input.Keyboard.JustDown(this.keyX)) {
+      this.nextPage();
+    }
   }
 
   shutdown() {
