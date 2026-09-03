@@ -26,8 +26,7 @@ export class MenuScene extends Phaser.Scene {
     // Keyboard input
     this.input.keyboard!.on("keydown-UP", () => this.moveSelect(-1));
     this.input.keyboard!.on("keydown-DOWN", () => this.moveSelect(1));
-    this.input.keyboard!.on("keydown-ENTER", () => this.confirmSelection());
-    this.input.keyboard!.on("keydown-SPACE", () => this.confirmSelection());
+    this.input.keyboard!.on("keydown-X", () => this.confirmSelection());
 
     // Display title and options
     this.render();

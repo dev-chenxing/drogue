@@ -8,9 +8,9 @@ export class InstructionsScene extends Phaser.Scene {
 
   private readonly pageColors = [COLORS.GREEN, COLORS.BLUE, COLORS.LAVENDER, COLORS.PINK];
 
-  private keyEnter!: Phaser.Input.Keyboard.Key;
-  private keySpace!: Phaser.Input.Keyboard.Key;
-  private keyEsc!: Phaser.Input.Keyboard.Key;
+  private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private keyC!: Phaser.Input.Keyboard.Key;
+  private keyX!: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super({ key: "InstructionsScene" });
@@ -100,33 +100,31 @@ export class InstructionsScene extends Phaser.Scene {
         "",
         "6 controls",
         " on the main screen, the arrows",
-        "move, [o] opens the menu, and",
+        "move, [c] opens the menu, and",
         "[x] aims your wand if you have",
         "one. within menus and targeting",
-        "screens [o] cancels and [x]",
+        "screens [c] cancels and [x]",
         "selects.",
         "",
         "happy crawling!",
-        "",
-        "Press ENTER / SPACE to return",
       ],
     ];
 
-    this.keyEnter = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    this.keySpace = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.keyEsc = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.keyC = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+    this.keyX = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+    this.cursorKeys = this.input.keyboard!.createCursorKeys();
 
-    this.keyEnter.on("down", () => this.nextPage());
-    this.keySpace.on("down", () => this.nextPage());
-    this.keyEsc.on("down", () => this.scene.start("MenuScene"));
+    this.keyC.on("down", () => this.nextPage());
+    this.keyX.on("down", () => this.nextPage());
+    this.cursorKeys.up?.on("down", () => this.nextPage());
+    this.cursorKeys.down?.on("down", () => this.nextPage());
+    this.cursorKeys.left?.on("down", () => this.nextPage());
+    this.cursorKeys.right?.on("down", () => this.nextPage());
 
     this.renderPage();
   }
 
   shutdown() {
-    this.keyEnter.off("down");
-    this.keySpace.off("down");
-    this.keyEsc.off("down");
     // empty the pages array to free memory
     this.pages = [];
   }

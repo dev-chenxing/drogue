@@ -17,13 +17,9 @@ export class GameScene extends Phaser.Scene {
   private messageTextObjects: Phaser.GameObjects.Text[] = []; // Pre-allocated text objects for messages
 
   // Keys
-  private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private keyO!: Phaser.Input.Keyboard.Key;
+  private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys; // Arrow keys
+  private keyC!: Phaser.Input.Keyboard.Key;
   private keyX!: Phaser.Input.Keyboard.Key;
-  private keyWASD!: { [key: string]: Phaser.Input.Keyboard.Key };
-  private onEscKeyDown = () => {
-    this.scene.start("MenuScene");
-  };
 
   constructor() {
     super({ key: "GameScene" });
@@ -45,22 +41,11 @@ export class GameScene extends Phaser.Scene {
 
     // Input handling
     this.cursorKeys = this.input.keyboard!.createCursorKeys();
-    this.keyO = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.O);
+    this.keyC = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.C);
     this.keyX = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
-    this.keyWASD = this.input.keyboard!.addKeys({
-      W: Phaser.Input.Keyboard.KeyCodes.W,
-      A: Phaser.Input.Keyboard.KeyCodes.A,
-      S: Phaser.Input.Keyboard.KeyCodes.S,
-      D: Phaser.Input.Keyboard.KeyCodes.D,
-    }) as { [key: string]: Phaser.Input.Keyboard.Key };
-
-    this.input.keyboard!.on("keydown-ESC", this.onEscKeyDown);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.shutdown());
   }
 
   shutdown() {
-    this.input.keyboard?.off("keydown-ESC", this.onEscKeyDown);
-
     // Destroy all text objects before scene shutdown
     this.frameTextObjects.forEach((textObj) => textObj.destroy());
     this.frameTextObjects = [];
@@ -85,7 +70,7 @@ export class GameScene extends Phaser.Scene {
     } else if (mode === "target") {
       this.handleTargetInput();
     } else if (mode === "dead" || mode === "win") {
-      if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.space)) {
+      if (Phaser.Input.Keyboard.JustDown(this.keyX)) {
         this.scene.start("MenuScene");
         return; // Exit early to avoid rendering after scene change
       }
@@ -104,18 +89,8 @@ export class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
       return this.gameState.handleMove({ x: 0, y: 1 });
 
-    // WASD movement input
-    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.W))
-      return this.gameState.handleMove({ x: 0, y: -1 });
-    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.A))
-      return this.gameState.handleMove({ x: -1, y: 0 });
-    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.S))
-      return this.gameState.handleMove({ x: 0, y: 1 });
-    if (Phaser.Input.Keyboard.JustDown(this.keyWASD.D))
-      return this.gameState.handleMove({ x: 1, y: 0 });
-
-    // O = Open menu
-    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.menuManager.openMenu();
+    // C = Open menu
+    if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.gameState.menuManager.openMenu();
     // X = use wand
     if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.enterTargetingMode();
   }
@@ -123,7 +98,7 @@ export class GameScene extends Phaser.Scene {
   private handleMenuInput() {
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.up)) this.gameState.menuManager.menuUp();
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down)) this.gameState.menuManager.menuDown();
-    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.menuManager.menuBack();
+    if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.gameState.menuManager.menuBack();
     if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.menuManager.menuSelectOption();
   }
 
@@ -136,7 +111,7 @@ export class GameScene extends Phaser.Scene {
       this.gameState.moveMapCamera({ x: 0, y: -1 });
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
       this.gameState.moveMapCamera({ x: 0, y: 1 });
-    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.menuManager.closeMenu();
+    if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.gameState.menuManager.closeMenu();
   }
 
   private handleTargetInput() {
@@ -149,7 +124,7 @@ export class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.cursorKeys.down))
       this.gameState.moveTargetCursor({ x: 0, y: 1 });
     if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.gameState.fireWand();
-    if (Phaser.Input.Keyboard.JustDown(this.keyO)) this.gameState.exitTargetingMode();
+    if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.gameState.exitTargetingMode();
   }
 
   private render() {
