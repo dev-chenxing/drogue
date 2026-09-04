@@ -256,11 +256,7 @@ export class GameState {
   public dropItem(item: ItemStack) {
     if (this.player.weapon === item) this.player.weapon = null;
     if (this.player.armor === item) this.player.armor = null;
-
-    // Drop the item at the player's current position
-    item.itemData.position = { ...this.player.position };
-    item.itemData.seen = true;
-    this.itemManager.addItem(item);
+    // Dropped inventory items are removed permanently
     this.menuManager.removeItemSelected();
     this.showMessage(`dropped the ${item.object.name}`);
   }

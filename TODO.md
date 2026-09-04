@@ -11,7 +11,7 @@
 - [x] fix: implement movement key holding down, so that the player can hold down a movement key to move continuously, instead of having to press the key repeatedly.
 - [x] fix: wand targeting
 - [x] docs: fix in-game manual
-- [ ] fix: drop item from inventory leaves the item on the ground, but the original game simply removes it, just as the game instructions say.
+- [x] fix: inventory drop behavior
 
 ## Actual features
 
