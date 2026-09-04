@@ -8,8 +8,8 @@
 - [x] feat: item discovery message when an item enters the player's vision
 - [x] fix: multiple enemies triggering multiple death messages when the player dies in combat
 - [x] fix: remove WASD controls and implement PICO-8 controls (arrows, x = select, c = menu/back)
-- [ ] fix: implement movement key holding down, so that the player can hold down a movement key to move continuously, instead of having to press the key repeatedly.
-- [ ] fix: wand target mode is not working correctly, player moves while targeting, and the target cursor also moves with the player
+- [x] fix: implement movement key holding down, so that the player can hold down a movement key to move continuously, instead of having to press the key repeatedly.
+- [x] fix: wand targeting
 - [ ] docs: rewrite in-game manual
 - [ ] fix: drop item from inventory leaves the item on the ground, but the original game simply removes it
 

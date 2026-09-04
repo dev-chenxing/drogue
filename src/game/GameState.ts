@@ -17,7 +17,7 @@ import type {
   Vector2,
   Weapon,
 } from "./types";
-import { distance, hasLineOfSight, updateVisibility } from "./Vision";
+import { distance, hasLineOfSight, updateVisibility } from "./vision";
 
 export class GameState {
   public mode: GameMode = "game";
@@ -290,14 +290,15 @@ export class GameState {
   public moveTargetCursor(direction: Vector2) {
     const centerX = Math.floor(UI.VIEWPORT_WIDTH / 2);
     const centerY = Math.floor(UI.VIEWPORT_HEIGHT / 2);
+    const playerPosition = { ...this.player.position };
     const targetPos = {
-      x: this.cursorPosition.x + this.player.position.x - centerX + direction.x,
-      y: this.cursorPosition.y + this.player.position.y - centerY + direction.y,
+      x: this.cursorPosition.x + playerPosition.x - centerX + direction.x,
+      y: this.cursorPosition.y + playerPosition.y - centerY + direction.y,
     };
 
     if (
-      hasLineOfSight(this.player.position, targetPos, this.tiles) &&
-      distance(this.player.position, targetPos) <= DUNGEON.VIEW_DISTANCE
+      hasLineOfSight(playerPosition, targetPos, this.tiles) &&
+      distance(playerPosition, targetPos) <= DUNGEON.VIEW_DISTANCE
     ) {
       this.cursorPosition.x += direction.x;
       this.cursorPosition.y += direction.y;

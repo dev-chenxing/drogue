@@ -4,7 +4,7 @@ import { ENTITY_DATA } from "./constants/entities";
 import type { GameState } from "./GameState";
 import { getIndefiniteArticle } from "./MessageLog";
 import type { EntityData, ItemStack, Mobile, Vector2 } from "./types";
-import { isVisible } from "./Vision";
+import { isVisible } from "./vision";
 
 export function getEntity(entityId: string): EntityData {
   const entity = ENTITY_DATA.find((candidate) => candidate.name === entityId);

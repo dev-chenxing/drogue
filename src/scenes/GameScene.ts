@@ -1,7 +1,7 @@
 import * as Phaser from "phaser";
 import { COLORS, UI } from "../game/constants/common";
 import { GameState } from "../game/GameState";
-import { isVisible } from "../game/Vision";
+import { isVisible } from "../game/vision";
 import { eAc, eDmg, eEv, hpColor, mpColor } from "../game/combat";
 import { drawText, hexToColor } from "../game/draw";
 import { allArrowDirection, KeyboardRepeater, verticalDirection } from "../game/Keyboard";

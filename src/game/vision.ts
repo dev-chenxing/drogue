@@ -3,6 +3,19 @@ import type { Tile, Vector2 } from "./types";
 
 // Bresenham's line-of-sight algorithm to determine if a target is visible from the source
 export function hasLineOfSight(source: Vector2, target: Vector2, tiles: Tile[][]): boolean {
+  if (
+    source.x < 0 ||
+    source.x >= tiles.length ||
+    source.y < 0 ||
+    source.y >= (tiles[source.x]?.length ?? 0) ||
+    target.x < 0 ||
+    target.x >= tiles.length ||
+    target.y < 0 ||
+    target.y >= (tiles[target.x]?.length ?? 0)
+  ) {
+    return false;
+  }
+
   if (distance(source, target) <= 1) return true; // Adjacent tiles are always visible
 
   let sx = source.x < target.x ? 1 : -1;
@@ -12,9 +25,11 @@ export function hasLineOfSight(source: Vector2, target: Vector2, tiles: Tile[][]
 
   let err = dx - dy;
   let firstStep = true;
+  let currentX = source.x;
+  let currentY = source.y;
 
-  while (!(source.x === target.x && source.y === target.y)) {
-    if (!firstStep && !tiles[source.x][source.y].walkable) {
+  while (!(currentX === target.x && currentY === target.y)) {
+    if (!firstStep && !tiles[currentX][currentY].walkable) {
       return false; // Obstacle blocks the line of sight
     }
     firstStep = false;
@@ -22,11 +37,11 @@ export function hasLineOfSight(source: Vector2, target: Vector2, tiles: Tile[][]
     let e2 = err * 2;
     if (e2 > -dy) {
       err -= dy;
-      source.x += sx;
+      currentX += sx;
     }
     if (e2 < dx) {
       err += dx;
-      source.y += sy;
+      currentY += sy;
     }
   }
 

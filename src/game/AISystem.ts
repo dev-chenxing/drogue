@@ -2,7 +2,7 @@ import { meleeAttack } from "./combat";
 import { DIRECTIONS, DUNGEON } from "./constants/common";
 import type { GameState } from "./GameState";
 import type { Mobile, Tile, Vector2 } from "./types";
-import { distance } from "./Vision";
+import { distance } from "./vision";
 
 interface DistCell {
   distance: number;

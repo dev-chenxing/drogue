@@ -2,7 +2,7 @@ import { ITEM_DATA } from "./constants/items";
 import type { GameState } from "./GameState";
 import { getIndefiniteArticle } from "./MessageLog";
 import type { ItemStack, ItemTemplate } from "./types";
-import { isVisible } from "./Vision";
+import { isVisible } from "./vision";
 
 export function getItem(itemId: string): ItemTemplate {
   const item = ITEM_DATA.find((candidate) => candidate.name === itemId);
